@@ -353,7 +353,8 @@ mainscreen proc near
     call draw_v_line
     ;call draw_horizontal_line
 
-    call draw_names
+    call draw_player1_name
+    call draw_player2_name
 
     ret
     mainscreen endp

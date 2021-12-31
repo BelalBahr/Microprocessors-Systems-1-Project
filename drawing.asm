@@ -774,19 +774,31 @@ draw_horizontal_line proc near
     ret
 draw_horizontal_line endp
 
-draw_names proc near
-    mov ah,2
-    mov cx,0
-    mov dh,0
-    mov dl,0
-    int 10h                 ;move cursor
+draw_player1_name proc near
+    mov ah,02
+    mov bh,00
+    mov dh,04h
+    mov dl,06h
+    int 10h             ;mov cursor
 
-    mov ah,9
-    mov dx,offset player1name
+    mov ah,09
+    lea dx,player1name
     int 21h
-
     ret
-draw_names endp
+draw_player1_name endp
+
+draw_player2_name proc near
+    mov ah,02
+    mov bh,00
+    mov dh,04h
+    mov dl,1ah
+    int 10h             ;move cursor
+
+    mov ah,09
+    lea dx,player2name
+    int 21h
+    ret
+draw_player2_name endp
 end main
 
 

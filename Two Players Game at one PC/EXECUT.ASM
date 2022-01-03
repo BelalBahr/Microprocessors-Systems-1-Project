@@ -36,6 +36,9 @@ TITLE CODE
         ALI_SCORE DB ?
         AHMED_SCORE DB ?
 
+        ALI_FORBIDDEN DB ?
+        AHMED_FORBIDDEN DB ?
+
         DEST DB 7 DUP("$")
         DEST_SIZE DB ?
         SOURCE DB 7 DUP("$")
@@ -270,7 +273,7 @@ MAIN PROC FAR
     JMP EXECUTE_COMMAND
 
     POWER_UP_1:
-        CMP PLAYER_ROUNC,1
+        CMP PLAYER_ROUND,1
         JNE EXE_AHMED
             READ_MESSAGE COMMAND_BUFFER,1,4,0
             CALL ALI_EXE
@@ -286,8 +289,31 @@ MAIN PROC FAR
         CALL ALI_EXE
         CALL AHMED_EXE
     POWER_UP_3:
+        CMP PLAYER_ROUND,1
+        JNE CHANG_ALI_FORBIDDEN
+
+
+        CHANG_ALI_FORBIDDEN:
 
     POWER_UP_4:
+        MOV ALI_AL,0
+        MOV ALI_AH,0
+        MOV ALI_BL,0
+        MOV ALI_BH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
+        MOV ALI_AH,0
 
     EXIT_POWER_UPS:
 

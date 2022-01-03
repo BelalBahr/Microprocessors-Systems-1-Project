@@ -2,7 +2,7 @@
 ; You may customize this and other start-up templates; 
 ; The location of this template is c:\emu8086\inc\0_com_template.txt
 
-.model small
+.model compact
 .data
 
 player1name         db 16, ?, 16 dup('$')
@@ -333,7 +333,7 @@ main proc far
         mov ah,07h
         lea dx,player2forbidden
         int 21h                 ;take player 2 forbidden 
-        mov player2forbidden,al
+        ;mov player2forbidden,al
 
         mov ax,0012h
         int 10h 
@@ -901,37 +901,6 @@ draw_player2_name proc near
     ret
 draw_player2_name endp
 
-draw_ proc near
-
-    lea di, player2name
-    mov dl,1ah
-
-    for2:
-        mov ah,09h
-        mov bh,00h
-        mov bl,03h
-        mov cx,1
-        mov al,[di]
-        int 10h         ; print name in cyan color
-
-        mov ah,02
-        mov bh,00
-        mov dh,1ah
-        inc dl
-        int 10h             ;move cursor
-        
-        inc di
-        mov dl,[di]
-        cmp dl,36
-        JNE for2
-        
-    ;mov ah,09
-    ;lea dx,player2name
-    ;int 21h
-    
-    ret
-draw_ endp
-
 draw_v_line proc near
     mov cx,vertical_start_x
     mov dx,vertical_start_y
@@ -957,12 +926,16 @@ draw_player1_forbidden proc near
     mov dl,09h
     int 10h             ;mov cursor
 
+    mov ah,2
+    mov dl,player2forbidden
+    int 21h
+
     mov ah,09h
     mov al,player2forbidden
     mov bh,00
     mov bl,03h
     mov cx,1
-    int 10h
+    ;int 10h
     ret
 draw_player1_forbidden endp
 

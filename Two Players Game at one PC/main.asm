@@ -1,4 +1,3 @@
-;INCLUDE MACROS1.INC
 INCLUDE MACROS.INC
 
 
@@ -1848,6 +1847,77 @@ HORIZONTAL_OFFSET DW 0
 VERTICAL_OFFSET   DW 0
 IMG_HIGHT DW 200
 IMG_WIDTH DW 320
+
+    exit db 0
+player1_pos dw 1760d                         ;position of player
+
+arrow1_pos dw 0d                             ;position of arrow
+arrow1_status db 0d                          ;0 = arrow ready to go else not 
+arrow1_limit dw  22d     ;150d
+
+loon1_pos dw 3860d       
+loon1_status db 1d
+
+player2_pos dw 1710d                         ;position of player
+
+arrow2_pos dw 0d                             ;position of arrow
+arrow2_status db 0d                          ;0 = arrow ready to go else not 
+arrow2_limit dw  22d     ;150d
+
+loon2_pos dw 3810d       
+loon2_status db 1d
+         
+                                            ;direction of player1 
+                                            ;up=8, down=2
+direction1 db 0d
+
+                                            ;direction of player1 
+                                            ;up=8, down=2
+direction2 db 0d
+
+state_buf db '00:0:0:0:0:0:00:00$'          ;score variable
+hit_num db 0d
+hits1 dw 0d
+miss1 dw 0d
+hits2 dw 0d
+miss2 dw 0d   
+
+game_over_str dw '  ',0ah,0dh
+db '                             |               |',0ah,0dh
+db '                             |---------------|',0ah,0dh
+db '                             |               |',0ah,0dh
+db '                             |_______________|',0ah,0dh
+dw ' ',0ah,0dh 
+dw ' ',0ah,0dh
+dw ' ',0ah,0dh
+dw ' ',0ah,0dh
+dw ' ',0ah,0dh
+dw ' ',0ah,0dh
+db '                                Game Over',0ah,0dh
+db '                        Press Enter to start again$',0ah,0dh 
+
+
+game_start_str dw '  ',0ah,0dh
+
+dw ' ',0ah,0dh
+dw ' ',0ah,0dh
+dw ' ',0ah,0dh
+db '                ====================================================',0ah,0dh
+db '               ||                                                  ||',0ah,0dh                                        
+db '               ||            *     Shooting Game      *            ||',0ah,0dh
+db '               ||                                                  ||',0ah,0dh
+db '               ||--------------------------------------------------||',0ah,0dh
+db '               ||                                                  ||',0ah,0dh
+db '               ||                                                  ||',0ah,0dh
+db '               ||                                                  ||',0ah,0dh          
+db '               ||     Use up and down key to move player1          ||',0ah,0dh
+db '               ||          and space button to shoot               ||',0ah,0dh
+db '               ||                                                  ||',0ah,0dh
+db '               ||     Use w and s key to move player2              ||',0ah,0dh
+db '               ||          and   g  button to shoot                ||',0ah,0dh
+db '               ||                                                  ||',0ah,0dh
+db '                ====================================================',0ah,0dh
+db '$',0ah,0dh
 
 
     ;============Common data================
@@ -4005,1697 +4075,497 @@ DRAW PROC FAR
 
 DRAW ENDP
 
-draw_al_p1 proc near
-    mov al, ALI_AL
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,6
-    mov dh,5
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_al1
-    print1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,7
-    mov dh,5
-    int 10h
-    
-    cmp ch,9
-    JNG print2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_al1
-    print2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_al1:
-draw_al_p1 endp
-
-draw_ah_p1 proc near
-    mov al, ALI_AH
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerA_start_x
-    add dl,2
-    mov dh,registerA_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print_ah1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_ah1
-    print_ah1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerA_start_x
-    add dl,4
-    mov dh,registerA_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print_ah2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_ah1
-    print_ah2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_ah1:
-draw_ah_p1 endp
-
-draw_bl_p1 proc near
-    mov al, ALI_BL
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerB_start_x
-    mov dh,registerB_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print_bl1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_bl1
-    print_bl1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerB_start_x
-    inc dl
-    mov dh,registerB_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print_bl2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_al1
-    print_bl2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_bl1:
-draw_bl_p1 endp
-
-draw_bh_p1 proc near
-    mov al, ALI_BH
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerB_start_x
-    add dl,2
-    mov dh,registerB_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print_bh1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_bh1
-    print_bh1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerB_start_x
-    add dl,4
-    mov dh,registerB_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print_bh2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_bh1
-    print_bh2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_bh1:
-draw_bh_p1 endp
-
-draw_cl_p1 proc near
-    mov al, ALI_CL
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerC_start_x
-    mov dh,registerC_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print_cl1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_cl1
-    print_cl1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerC_start_x
-    inc dl
-    mov dh,registerC_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print_cl2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_cl1
-    print_cl2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_cl1:
-draw_cl_p1 endp
-
-draw_ch_p1 proc near
-    mov al, ALI_CH
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerC_start_x
-    add dl,2
-    mov dh,registerC_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print_ch1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_ch1
-    print_ch1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerC_start_x
-    add dl,4
-    mov dh,registerC_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print_ch2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_ch1
-    print_ch2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_ch1:
-draw_ch_p1 endp
-
-draw_dl_p1 proc near
-    mov al, ALI_DL
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerD_start_x
-    mov dh,registerD_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print_dl1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_dl1
-    print_dl1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print_dl2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_dl1
-    print_dl2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_dl1:
-draw_dl_p1 endp
-
-draw_dh_p1 proc near
-    mov al, ALI_DH
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerD_start_x
-    add dl,2
-    mov dh,registerD_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print_dh1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_dh1
-    print_dh1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    add dl,4
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print_dh2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_dh1
-    print_dh2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_dh1:
-draw_dh_p1 endp
-
-draw_al_p2 proc near
-    mov al, AHMED_AL
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,6
-    mov dh,5
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end2_al1
-    print1_2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,7
-    mov dh,5
-    int 10h
-    
-    cmp ch,9
-    JNG print2_2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end2_al1
-    print2_2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end2_al1:
-draw_al_p2 endp
-
-draw_ah_p2 proc near
-    mov al, AHMED_AH
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerA_start_x
-    add dl,2
-    mov dh,registerA_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print2_ah1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_ah2
-    print2_ah1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerA_start_x
-    add dl,4
-    mov dh,registerA_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_ah2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_ah2
-    print2_ah2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_ah2:
-draw_ah_p2 endp
-
-draw_bl_p2 proc near
-    mov al, AHMED_BL
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerB_start_x
-    mov dh,registerB_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print2_bl1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_bl2
-    print2_bl1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerB_start_x
-    inc dl
-    mov dh,registerB_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_bl2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_bl2
-    print2_bl2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_bl2:
-draw_bl_p2 endp
-
-draw_bh_p2 proc near
-    mov al, AHMED_BH
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerB_start_x
-    add dl,2
-    mov dh,registerB_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print2_bh1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_bh1
-    print2_bh1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerB_start_x
-    add dl,4
-    mov dh,registerB_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_bh2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_bh2
-    print2_bh2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_bh2:
-draw_bh_p2 endp
-
-draw_cl_p2 proc near
-    mov al, AHMED_CL
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerC_start_x
-    mov dh,registerC_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print2_cl1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_cl2
-    print2_cl1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerC_start_x
-    inc dl
-    mov dh,registerC_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_cl2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_cl2
-    print2_cl2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_cl2:
-draw_cl_p2 endp
-
-draw_ch_p2 proc near
-    mov al, AHMED_CH
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerC_start_x
-    add dl,2
-    mov dh,registerC_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print2_ch1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_ch2
-    print2_ch1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerC_start_x
-    add dl,4
-    mov dh,registerC_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_ch2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_ch2
-    print2_ch2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_ch2:
-draw_ch_p2 endp
-
-draw_dl_p2 proc near
-    mov al, AHMED_DL
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerD_start_x
-    mov dh,registerD_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print2_dl1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_dl2
-    print2_dl1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_dl2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_dl2
-    print2_dl2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_dl2:
-draw_dl_p2 endp
-
-draw_dh_p2 proc near
-    mov al, AHMED_DH
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerD_start_x
-    add dl,2
-    mov dh,registerD_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print2_dh1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_dh2
-    print2_dh1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    add dl,4
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_dh2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_dh2
-    print2_dh2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_dh2:
-draw_dh_p2 endp
-
-draw_si_p1 proc near
-    mov ax,ALI_SI
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_si1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_si1
-    print1_si1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print1_si4
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_si1
-    print1_si4:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,ALI_SI
-    mov al,ah
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print12_si1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_si1
-    print12_si1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print12_si2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_si1
-    print12_si2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-
-    end_si1:
-ret
-draw_si_p1 endp
-
-draw_si_p2 proc near
-    mov ax,AHMED_SI
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_si2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_si2
-    print1_si2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_si2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_si1
-    print2_si2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,AHMED_SI
-    mov al,ah
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print3_si2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_si2
-    print3_si2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print4_si2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_si2
-    print4_si2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-
-    end_si2:
-ret
-draw_si_p2 endp
-
-draw_di_p1 proc near
-    mov ax,ALI_DI
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_di1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_di1
-    print1_di1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_di1
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_di1
-    print2_di1:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,ALI_DI
-    mov al,ah
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print3_di1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_di1
-    print3_di1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print4_di1
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_di1
-    print4_di1:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-
-    end_di1:
-ret
-draw_di_p1 endp
-
-draw_di_p2 proc near
-    mov ax,AHMED_DI
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_di2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_di2
-    print1_di2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_di2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_di1
-    print2_di2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,AHMED_DI
-    mov al,ah
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print3_di2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_di2
-    print3_di2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print4_di2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_di2
-    print4_di2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-
-    end_di2:
-ret
-draw_di_p2 endp
-
-draw_sp_p1 proc near
-    mov ax,ALI_SP
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_sp1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_sp1
-    print1_sp1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_sp1
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_sp1
-    print2_sp1:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,AHMED_SP
-    mov al,ah
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print3_sp1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_sp1
-    print3_sp1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print4_sp1
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_sp1
-    print4_sp1:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-
-    end_sp1:
-ret
-draw_sp_p1 endp
-
-draw_sp_p2 proc near
-    mov ax,AHMED_SP
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_sp2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_sp2
-    print1_sp2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_sp2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_sp1
-    print2_sp2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,AHMED_SP
-    mov al,ah
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print3_sp2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_sp2
-    print3_sp2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print4_sp2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_sp2
-    print4_sp2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-
-    end_sp2:
-ret
-draw_sp_p2 endp
-
-draw_bp_p1 proc near
-    mov ax,ALI_BP
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_bp1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_bp1
-    print1_bp1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_bp1
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_bp1
-    print2_bp1:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,AHMED_BP
-    mov al,ah
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print3_bp1
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_bp1
-    print3_bp1:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print4_bp1
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_bp1
-    print4_bp1:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-
-    end_bp1:
-ret
-draw_bp_p1 endp
-
-draw_bp_p2 proc near
-    mov ax,AHMED_BP
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print1_bp2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_bp2
-    print1_bp2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print2_bp2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_bp1
-    print2_bp2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ax,AHMED_BP
-    mov al,ah
-    mov ah,00
-    mov bl,16
-    div bl             ; al = ax/16    ah = ax % 10 
-    mov cl, al
-    mov ch, ah
-
-    mov ah,02
-    mov dl,registerSI_start_x
-    mov dh,registerSI_start_y
-    int 10h            ;mov cusror
-    
-    cmp cl,9
-    JNG print3_bp2
-    add cl,87
-    
-    mov ah,2
-    mov dl,cl
-    int 21h
-    jmp end_bp2
-    print3_bp2:
-    add cl,48
-
-    mov ah,2
-    mov dl,cl
-    int 21h
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    mov ah,02
-    mov dl,registerD_start_x
-    inc dl
-    mov dh,registerD_start_y
-    int 10h
-    
-    cmp ch,9
-    JNG print4_bp2
-    add ch,87
-    
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    jmp end_bp2
-    print4_bp2:
-    add ch,48
-
-    mov ah,2
-    mov dl,ch
-    int 21h
-
-    end_bp2:
-ret
-draw_bp_p2 endp
-
 END MAIN
+
+SHOOTING PROC FAR
+                                                                        
+    main_loop:                                 ;update logic and display everything
+                                            ;check any key is pressed
+        mov ah,1h
+        int 16h                                ;go if pressed
+        jnz key_pressed
+        jmp inside_loop                        ;or just continue
+        
+        inside_loop:                           ;checking every thing
+            
+            cmp miss1,3                          ;if baloon miss 3 times.go to game over section
+            jge game_over
+
+            cmp miss2,3
+            jge game_over
+            
+            mov dx,arrow1_pos                   ;checking collitions
+            cmp dx, loon1_pos
+            je hit1
+
+            mov dx,arrow2_pos                   ;checking collitions
+            cmp dx, loon2_pos
+            je hit2
+            
+            cmp direction1,8d                   ;update player position
+            je player1_up
+            cmp direction1,2d                   ;up or down based on direction1 veriable
+            je player1_down
+            cmp direction2,8d
+            je player2_up
+            cmp direction2,2d
+            je player2_down
+            
+            mov dx,arrow2_limit                 ;hide arrow 
+            cmp arrow2_pos, dx
+            jge hide_arrow2
+            
+            mov dx,arrow1_limit                 ;hide arrow 
+            cmp arrow1_pos, dx
+            jge hide_arrow1
+
+            
+            
+            cmp loon1_pos, 0d                   ;check missed loon
+            jle miss_loons
+            cmp loon2_pos, 0d
+            jle miss_loons
+            jne render_loons
+        
+            hit1:                               ;play sound if hit
+                mov loon1_status, 0d
+                mov ah,2
+                mov dx, 7d
+                int 21h 
+                
+                inc hits1                       ;update score
+                
+                
+                mov ah,2                       ;new line
+                mov dl, 0dh
+                int 21h    
+                
+                cmp loon2_status, 0d
+                je fire_loons                  ;new loon pops up
+                jmp render_loons
+
+            hit2:                               ;play sound if hit
+                mov loon2_status, 0d
+                mov ah,2
+                mov dx, 7d
+                int 21h 
+                
+                inc hits2                       ;update score
+                
+    
+                
+                mov ah,2                       ;new line
+                mov dl, 0dh
+                int 21h    
+                
+                cmp loon1_status, 0d
+                je fire_loons                  ;new loon pops up
+                jmp render_loons
+
+            render_loons:                       ;draw loons
+                mov cl, ' '                    ;hide old loon
+                mov ch, 1111b
+
+                
+                MOV     CX, 1H
+                MOV     DX, 140H
+                MOV     AH, 86H         
+                INT     15H                 ;wait 1 sec
+                
+                cmp loon1_status, 0d
+                je render_loon2
+
+                mov bx,loon1_pos 
+                mov es:[bx], cx
+                    
+                sub loon1_pos,160d              ;and draw new one in new position
+                mov cl, 15d
+                mov ch, 1101b
+
+                mov bx,loon1_pos 
+                mov es:[bx], cx
+
+                render_loon2:
+                    mov cl, ' '                     ;hide old loon
+                    mov ch, 1111b
+                    
+                    cmp loon2_status, 0d
+                    je firing_check
+
+
+                    mov bx,loon2_pos 
+                    mov es:[bx], cx
+                        
+                    sub loon2_pos,160d              ;and draw new one in new position
+                    mov cl, 15d
+                    mov ch, 1101b
+
+                    mov bx,loon2_pos 
+                    mov es:[bx], cx
+                    
+                firing_check:
+                    cmp loon1_status, 0d
+                    jne continue
+                    cmp loon2_status, 0d
+                    jne continue
+                    jmp fire_loons
+
+                continue:
+                    cmp arrow1_status,1d    
+                    je render_arrows
+                    cmp arrow2_status,1d
+                    je render_arrow2
+
+                    jmp inside_loop2 
+
+            render_arrows:                      ;render arrow
+            
+                mov cl, ' '
+                mov ch, 1111b
+            
+                cmp arrow1_status, 0d
+                je render_arrow2
+                
+                mov bx,arrow1_pos               ;hide old position
+                mov es:[bx], cx
+                    
+                add arrow1_pos,4d               ;draw new position
+                mov cl, 26d
+                mov ch, 1001b
+            
+                mov bx,arrow1_pos 
+                mov es:[bx], cx
+
+                render_arrow2:
+                    mov cl, ' '
+                    mov ch, 1111b
+                
+                    cmp arrow2_status, 0d
+                    je inside_loop2
+                    
+                    mov bx,arrow2_pos               ;hide old position
+                    mov es:[bx], cx
+                        
+                    add arrow2_pos,4d               ;draw new position
+                    mov cl, 26d
+                    mov ch, 1001b
+                
+                    mov bx,arrow2_pos 
+                    mov es:[bx], cx
+
+            
+            inside_loop2:
+                
+                mov cl, 125d                  ;draw player char
+                mov ch, 1100b                 ;color red
+                
+                mov bx,player1_pos 
+                mov es:[bx], cx
+
+                mov cl, 125d
+                mov ch,1010b
+
+                mov bx,player2_pos
+                mov es:[bx], cx
+                
+                
+                        
+        cmp exit,0
+        je main_loop                          ;end main loop
+        jmp exit_game
+    
+    jmp inside_loop2
+        
+    player1_up:                                ;hide player old position
+        mov cl, ' '
+        mov ch, 1111b
+            
+        mov bx,player1_pos 
+        mov es:[bx], cx
+        
+        sub player1_pos, 160d                  ;set new postion of player
+        mov direction1, 0    
+
+        jmp inside_loop2                      ;it will draw in main loop
+        
+    player1_down:
+        mov cl, ' '                           ;same as player up
+        mov ch, 1111b                         ;hide old one and set new postion
+                                            
+        mov bx,player1_pos 
+        mov es:[bx], cx
+        
+        add player1_pos,160d                   ;and main loop draw that
+        mov direction1, 0
+        
+        jmp inside_loop2
+
+    player2_up:                                ;hide player old position
+        mov cl, ' '
+        mov ch, 1111b
+            
+        mov bx,player2_pos 
+        mov es:[bx], cx
+        
+        sub player2_pos, 160d                  ;set new postion of player
+        mov direction2, 0    
+
+        jmp inside_loop2                      ;it will draw in main loop
+        
+    player2_down:
+        mov cl, ' '                           ;same as player up
+        mov ch, 1111b                         ;hide old one and set new postion
+                                            
+        mov bx,player2_pos 
+        mov es:[bx], cx
+        
+        add player2_pos,160d                   ;and main loop draw that
+        mov direction2, 0
+        
+        jmp inside_loop2
+    key_pressed:                              ;input hanaling section
+        mov ah,0
+        int 16h
+
+        cmp ah,48h                            ;go upKey if up button is pressed
+        je upKey
+        cmp ah, 50h
+        je downKey
+        
+        cmp ah,39h                            ;go spaceKey if up button is pressed
+        je spaceKey
+        
+        cmp ah,4Bh                            ;go leftKey (this is for debuging)
+        je leftKey
+
+        cmp ah,11h
+        je wKey
+
+        cmp ah,1Fh
+        je sKey
+
+        cmp ah,22h
+        je gKey
+        
+                                            ;if no key is pressed go to inside of loop
+        jmp inside_loop
+
+    leftKey:                                  ;for debuging 
+        ;jmp game_over
+        inc miss1
+                
+
+        
+        mov ah,2
+        mov dl, 0dh
+        int 21h
+    jmp inside_loop
+        
+    upKey:                                    ;set player1 direction to up
+        mov direction1, 8d
+        jmp inside_loop
+
+    downKey:
+        mov direction1, 2d                     ;set player1 direction to down
+        jmp inside_loop
+        
+    spaceKey:                                 ;shoot an arrow
+        cmp arrow1_status,0
+        je  fire_arrow1
+        jmp inside_loop
+
+    wKey:                                    ;set player2 direction to up
+        mov direction2, 8d
+        jmp inside_loop
+
+    sKey:
+        mov direction2, 2d                     ;set player2 direction to down
+        jmp inside_loop
+        
+    gKey:                                 ;shoot an arrow
+        cmp arrow2_status,0
+        je  fire_arrow2
+        jmp inside_loop
+
+
+    fire_arrow1:                               ;set arrow postion in player position
+        mov dx, player1_pos                    ;so arrow fire from player postion
+        mov arrow1_pos, dx
+        
+        mov dx,player1_pos                     ;when fire an arrow it also set limit
+        mov arrow1_limit, dx                   ;of arrow. where it should be hide
+        add arrow1_limit, 22d  ;150
+        
+        mov arrow1_status, 1d                  ;set arrow status.It prevents multiple 
+        jmp inside_loop                       ;shooting 
+
+    fire_arrow2:                               ;set arrow postion in player position
+        mov dx, player2_pos                    ;so arrow fire from player postion
+        mov arrow2_pos, dx
+        
+        mov dx,player2_pos                     ;when fire an arrow it also set limit
+        mov arrow2_limit, dx                   ;of arrow. where it should be hide
+        add arrow2_limit, 22d  ;150
+        
+        mov arrow2_status, 1d                  ;set arrow status.It prevents multiple 
+        jmp inside_loop                       ;shooting 
+
+    miss_loons:
+        
+        cmp loon1_pos, 0d                   ;check missed loon
+        jg miss_loon2
+
+        miss_loon1:
+            mov loon1_status, 0d
+            inc miss1
+            
+        
+        miss_loon2:
+            cmp loon2_pos, 0d
+            jg render_loons
+
+            mov loon2_status, 0d
+            inc miss2
+
+                                                ;new line
+            mov ah,2
+            mov dl, 0dh
+            int 21h 
+
+        jmp render_loons
+        
+    fire_loons:                                ;fire new balloons
+
+        fire1:
+            mov loon1_status, 1d
+            mov loon1_pos, 3860d     ;3860d    
+
+        fire2:
+            mov loon2_status, 1d
+            mov loon2_pos, 3810d     ;3810d
+
+        jmp render_loons
+        
+    hide_arrow1:
+        mov arrow1_status, 0                   ;hide arrow
+        
+        mov cl, ' '
+        mov ch, 1111b
+        
+        mov bx,arrow1_pos 
+        mov es:[bx], cx
+        
+        cmp loon1_pos, 0d 
+        jle miss_loons
+        jne render_loons 
+        
+        jmp inside_loop2
+        
+                                            ;print game over screen
+
+    hide_arrow2:
+        mov arrow2_status, 0                   ;hide arrow
+        
+        mov cl, ' '
+        mov ch, 1111b
+        
+        mov bx,arrow2_pos 
+        mov es:[bx], cx
+        
+        cmp loon2_pos, 0d 
+        jle miss_loons
+        jne render_loons 
+        
+        jmp inside_loop2
+
+                                            ;print game over screen
+    game_over:
+        mov ah,09h
+        ;mov dh,0
+        mov dx, offset game_over_str
+        int 21h
+        
+        
+        
+        mov cl, ' '                           ;hide last of screen balloon
+        mov ch, 1111b 
+        mov bx,arrow1_pos                      
+        
+        mov cl, ' '                           ;hide player
+        mov ch, 1111b 
+        mov bx,player1_pos  
+    
+        
+        ;reset value                          ;update variable for start again
+        mov miss1, 0d
+        mov hits1,0d
+        
+        mov player1_pos, 1760d
+
+        mov arrow1_pos, 0d
+        mov arrow1_status, 0d 
+        mov arrow1_limit, 22d      
+
+        mov loon1_pos, 3860d       
+        mov loon1_status, 1d
+            
+        mov direction1, 0d
+
+        mov miss2, 0d
+        mov hits2,0d
+        
+        mov player2_pos, 1710d
+
+        mov arrow2_pos, 0d
+        mov arrow2_status, 0d 
+        mov arrow2_limit, 22d      
+
+        mov loon2_pos, 3810d       
+        mov loon2_status, 1d
+            
+        mov direction2, 0d
+        
+                                            ;wait for input
+        input:
+            mov ah,1
+            int 21h
+            cmp al,13d
+            jne input
+            call clear_screen
+            jmp main_loop
+        
+
+    game_menu:
+                                            ;game menu screen
+        mov ah,09h
+        mov dh,0
+        mov dx, offset game_start_str
+        int 21h
+
+        MOV     CX, 015H
+        MOV     DX, 8240H
+        MOV     AH, 86H         
+        INT     15H        ;wait 1 sec
+
+        call clear_screen
+        
+
+        
+        jmp main_loop
+
+    exit_game:                                  ;end of our sweet game :)
+    mov exit,10d
+
+    main endp
+
+
+
+
+    clear_screen proc near
+            mov ah,0
+            mov al,3
+            int 10h        
+            ret
+    clear_screen endp
+
+SHOOTING ENDP

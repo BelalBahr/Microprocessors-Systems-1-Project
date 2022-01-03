@@ -24,87 +24,89 @@ initial2            db 'please enter the second initial points:','$'
 levelselect         db 'select your level, press 1 for level 1 and 2 for level 2:','$'
 player2initial      db 16, ?, 16 dup('$')
 
-levelone            db 'you chose level one','$'   
-leveltwo            db 'you chose level two','$'
+forbidden1 db 'enter first forbidden character','$'
+forbidden2 db 'enter second forbidden character','$'
+player1forbidden db ? 
+player2forbidden db ?
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 registerA_len        equ 50
-registerA_width      equ 7 
-registerA_start_x    equ 20
+registerA_width      equ 10 
+registerA_start_x    equ 30
 registerA_start_y    equ 50
 
 registerB_len        equ 50
-registerB_width      equ 7 
-registerB_start_x    equ 20
+registerB_width      equ 10
+registerB_start_x    equ 30
 registerB_start_y    equ 70
 
 registerC_len        equ 50
-registerC_width      equ 7 
-registerC_start_x    equ 20
+registerC_width      equ 10
+registerC_start_x    equ 30
 registerC_start_y    equ 90
 
 registerD_len        equ 50
-registerD_width      equ 7 
-registerD_start_x    equ 20
+registerD_width      equ 10
+registerD_start_x    equ 30
 registerD_start_y    equ 110
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 registerSI_len        equ 50
-registerSI_width      equ 7 
-registerSI_start_x    equ 90
+registerSI_width      equ 10 
+registerSI_start_x    equ 100
 registerSI_start_y    equ 50
 
 registerDI_len        equ 50
-registerDI_width      equ 7 
-registerDI_start_x    equ 90
+registerDI_width      equ 10
+registerDI_start_x    equ 100
 registerDI_start_y    equ 70
 
 registerSP_len        equ 50
-registerSP_width      equ 7 
-registerSP_start_x    equ 90
+registerSP_width      equ 10
+registerSP_start_x    equ 100
 registerSP_start_y    equ 90
 
 registerBP_len        equ 50
-registerBP_width      equ 7 
-registerBP_start_x    equ 90
+registerBP_width      equ 10
+registerBP_start_x    equ 100
 registerBP_start_y    equ 110
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 registerA2_len        equ 50
-registerA2_width      equ 7 
-registerA2_start_x    equ 180
+registerA2_width      equ 10
+registerA2_start_x    equ 170
 registerA2_start_y    equ 50
 
 registerB2_len        equ 50
-registerB2_width      equ 7 
-registerB2_start_x    equ 180
+registerB2_width      equ 10
+registerB2_start_x    equ 170
 registerB2_start_y    equ 70
 
 registerC2_len        equ 50
-registerC2_width      equ 7 
-registerC2_start_x    equ 180
+registerC2_width      equ 10
+registerC2_start_x    equ 170
 registerC2_start_y    equ 90
 
 registerD2_len        equ 50
-registerD2_width      equ 7 
-registerD2_start_x    equ 180
+registerD2_width      equ 10
+registerD2_start_x    equ 170
 registerD2_start_y    equ 110
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 registerSI2_len        equ 50
-registerSI2_width      equ 7 
-registerSI2_start_x    equ 250
+registerSI2_width      equ 10 
+registerSI2_start_x    equ 240
 registerSI2_start_y    equ 50
 
 registerDI2_len        equ 50
-registerDI2_width      equ 7 
-registerDI2_start_x    equ 250
+registerDI2_width      equ 10
+registerDI2_start_x    equ 240
 registerDI2_start_y    equ 70
 
 registerSP2_len        equ 50
-registerSP2_width      equ 7 
-registerSP2_start_x    equ 250
+registerSP2_width      equ 10
+registerSP2_start_x    equ 240
 registerSP2_start_y    equ 90
 
 registerBP2_len        equ 50
-registerBP2_width      equ 7 
-registerBP2_start_x    equ 250
+registerBP2_width      equ 10
+registerBP2_start_x    equ 240
 registerBP2_start_y    equ 110
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 vertical_start_x       equ 160
@@ -117,6 +119,22 @@ horizontal_len         equ 150
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 background_len         equ 320
 background_height      equ 200
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+chatting_start_x       equ 0
+chatting_start_y       equ 160
+chatting_end_x         equ 320
+chatting_end_y         equ 200
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+memory_p1_start_x      equ 0
+memory_p1_start_y      equ 0
+memory_p1_end_x        equ 15
+memory_p1_end_y        equ 170
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+memory_p2_start_x      equ 305
+memory_p2_start_y      equ 0
+memory_p2_end_x        equ 320
+memory_p2_end_y        equ 170
+
 .code
 main proc far  
     
@@ -274,12 +292,66 @@ main proc far
         
      initialis1:
         mov initial,bh
-        jmp lvlselect
+        jmp forbidden
         
      initialis2:
         mov initial,bl
         
+        forbidden: 
+        mov ax,0012h
+        int 10h 
         
+        mov ah,2
+        mov cx,0
+        mov dh,0
+        mov dl,0
+        int 10h             ;ove cursor
+         
+        mov ah,9
+        lea dx,forbidden1
+        int 21h
+          
+        
+        mov ah,07h
+        lea dx,player1forbidden
+        int 21h                 ;take player 1 forbidden
+        mov player1forbidden, al
+
+        mov ax,0012h
+        int 10h
+        
+        mov ah,2
+        mov cx,0
+        mov dh,0
+        mov dl,0
+        int 10h
+         
+        mov ah,9
+        lea dx,forbidden2
+        int 21h
+        
+        mov ah,07h
+        lea dx,player2forbidden
+        int 21h                 ;take player 2 forbidden 
+        mov player2forbidden,al
+
+        mov ax,0012h
+        int 10h 
+        
+        mov ah,2
+        mov dl,player1forbidden
+        int 21h 
+        
+        mov ah,02
+        mov dh,20
+        mov dl,0
+        mov cx,0
+        int 10h
+        
+        mov ah,2
+        mov dl,player2forbidden
+        int 21h
+
     lvlselect:
     
         mov ax,0012h
@@ -314,23 +386,28 @@ main proc far
         
         loop lvlselect 
     
-      
      lvlone:  
-        mov ah,9
-        lea dx,levelone
-        int 21h
+        call level_1
         jmp end1
                 
      lvltwo:
-        mov ah,9
-        lea dx,leveltwo
-        int 21h
+        call level_2
     
     end1:
 
-    call mainscreen
+main endp
 
-main endp    
+level_1 proc near
+    call mainscreen
+    call draw_player1_forbidden
+    call draw_player2_forbidden
+ret
+level_1 endp
+
+level_2 proc near
+    call mainscreen
+ret
+level_2 endp
 
 mainscreen proc near
 
@@ -345,16 +422,19 @@ mainscreen proc near
 
     mov ah,0bh
     mov bh,00h
-    mov bl,00h
+    mov bl,03h      ;set background color to cyan
     int 10h
+    int 3
 
     call draw_background
     call draw_alu
     call draw_v_line
-    ;call draw_horizontal_line
 
     call draw_player1_name
     call draw_player2_name
+    call draw_chatting_area
+    call draw_memory_p1
+    call draw_memory_p2
 
     ret
     mainscreen endp
@@ -739,6 +819,119 @@ mov cx,registerBP_start_x
     ret
 draw_alu endp
 
+draw_chatting_area proc near
+    mov cx,chatting_start_x
+    mov dx,chatting_start_y
+
+    draw_area:
+        mov ah,0ch
+        mov al,0fh                      ;white color
+        mov bh,00h                      ;page number 0
+        int 10h                         ;graphics interrupt
+
+        inc cx
+        mov ax,cx
+        cmp ax,chatting_end_x
+        JNG draw_area                   ;cx - register start in x = register length
+
+    mov cx,chatting_start_x
+    inc dx
+    mov ax,dx
+    cmp ax,chatting_end_y
+    JNG draw_area                        ;dx - register start in y = register width
+    ret
+draw_chatting_area endp
+
+draw_player1_name proc near
+    mov ah,02
+    mov bh,00
+    mov dh,04h
+    mov dl,06h
+    int 10h             ;mov cursor
+    
+    lea di, player1name
+    mov dl,06h
+
+    loop2:
+        mov ah,09h
+        mov bh,00h
+        mov bl,03h
+        mov cx,1
+        mov al,[di]
+        int 10h         ; print name in cyan color
+
+        mov ah,02
+        mov bh,00
+        mov dh,04h
+        inc dl
+        int 10h             ;move cursor
+        
+        inc di
+        mov dh,[di]
+        cmp dh,36
+        JNE loop2
+
+    ret
+draw_player1_name endp
+
+draw_player2_name proc near
+
+    lea di, player2name
+    mov dl,19h
+
+    for:
+        mov ah,09h
+        mov bh,00h
+        mov bl,03h
+        mov cx,1
+        mov al,[di]
+        int 10h         ; print name in cyan color
+
+        mov ah,02
+        mov bh,00
+        mov dh,04h
+        inc dl
+        int 10h             ;move cursor
+        
+        inc di
+        mov dh,[di]
+        cmp dh,36
+        JNE for
+    
+    ret
+draw_player2_name endp
+
+draw_ proc near
+
+    lea di, player2name
+    mov dl,1ah
+
+    for2:
+        mov ah,09h
+        mov bh,00h
+        mov bl,03h
+        mov cx,1
+        mov al,[di]
+        int 10h         ; print name in cyan color
+
+        mov ah,02
+        mov bh,00
+        mov dh,1ah
+        inc dl
+        int 10h             ;move cursor
+        
+        inc di
+        mov dl,[di]
+        cmp dl,36
+        JNE for2
+        
+    ;mov ah,09
+    ;lea dx,player2name
+    ;int 21h
+    
+    ret
+draw_ endp
+
 draw_v_line proc near
     mov cx,vertical_start_x
     mov dx,vertical_start_y
@@ -757,49 +950,84 @@ draw_v_line proc near
     ret
 draw_v_line endp
 
-draw_horizontal_line proc near
-    mov cx,horizontal_start_x
-    mov dx,horizontal_start_y
-
-    draw_horizontal:
-    mov ah,0ch
-    mov al,0fh
-    mov bh,00
-    int 10h
-
-    inc cx
-    mov ax,cx
-    sub ax,horizontal_start_x
-    cmp ax,horizontal_len
-    JNG draw_horizontal
-    ret
-draw_horizontal_line endp
-
-draw_player1_name proc near
+draw_player1_forbidden proc near
     mov ah,02
     mov bh,00
-    mov dh,04h
-    mov dl,06h
+    mov dh,02h
+    mov dl,09h
     int 10h             ;mov cursor
 
-    mov ah,09
-    lea dx,player1name
-    int 21h
+    mov ah,09h
+    mov al,player2forbidden
+    mov bh,00
+    mov bl,03h
+    mov cx,1
+    int 10h
     ret
-draw_player1_name endp
+draw_player1_forbidden endp
 
-draw_player2_name proc near
+draw_player2_forbidden proc near
     mov ah,02
     mov bh,00
-    mov dh,04h
-    mov dl,1ah
-    int 10h             ;move cursor
+    mov dh,02h
+    mov dl,1eh
+    int 10h             ;mov cursor
 
-    mov ah,09
-    lea dx,player2name
-    int 21h
-    ret
-draw_player2_name endp
+    mov ah,09h
+    mov al,player1forbidden
+    mov bh,00
+    mov bl,03h
+    mov cx,1
+    int 10h
+ret
+draw_player2_forbidden endp
+
+draw_memory_p1 proc near
+    mov cx,memory_p1_start_x
+    mov dx,memory_p1_start_y
+
+    draw_memory1:
+        mov ah,0ch
+        mov al,0fh                      ;white color
+        mov bh,00h                      ;page number 0
+        int 10h                         ;graphics interrupt
+
+        inc cx
+        mov ax,cx
+        cmp ax,memory_p1_end_x
+        JNG draw_memory1                   ;loop until ax = memory reaches row 15
+
+    mov cx,memory_p1_start_x
+    inc dx
+    mov ax,dx
+    cmp ax,memory_p1_end_y
+    JNG draw_memory1                    ;loop until shape is drawn
+ret
+draw_memory_p1 endp
+
+draw_memory_p2 proc near
+    mov cx,memory_p2_start_x
+    mov dx,memory_p2_start_y
+
+    draw_memory2:
+        mov ah,0ch
+        mov al,0fh                      ;white color
+        mov bh,00h                      ;page number 0
+        int 10h                         ;graphics interrupt
+
+        inc cx
+        mov ax,cx
+        cmp ax,memory_p2_end_x
+        JNG draw_memory2                   ;loop until ax = memory reaches row 15
+
+    mov cx,memory_p2_start_x
+    inc dx
+    mov ax,dx
+    cmp ax,memory_p2_end_y
+    JNG draw_memory2                    ;loop until shape is drawn
+ret
+draw_memory_p2 endp
+
 end main
 
 

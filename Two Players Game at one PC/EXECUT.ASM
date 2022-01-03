@@ -19,11 +19,22 @@ TITLE CODE
     ;============Common data================
 
         MESS1 DB "Please enter command",10,13,"$"
-
+        USEPOWERUPS DB "TO USE POWER UPS WRITE 1, TO EXECUTE COMMAND WRITE 2",'$'
+        SELECT_POWER_UP DB '1- EXECUTING A COMMAND ON YOUR OWN PROCESSOR [-5 points]',10,13
+                        DB '2- Executing a command on your processor and your opponent processor [-3 points]',10,13
+                        DB '3- Changing the forbidden character (USED ONCE) [-8 points]',10,13
+                        DB '4- Clearing all registers (USED ONCE) [-30 points]','$'
+        
+        POWER_UPS_BUFFER DB ?
         COMMAND_BUFFER LABEL BYTE
         COMMAND_BUFFER_SIZE DB 20
         COMMAND_BUFFER_ACTUAL_SIZE DB ?
         COMMAND_BUFFER_INSTRUCTION DB 20 DUP("$")
+
+        PLAYER_ROUND DB 1
+
+        ALI_SCORE DB ?
+        AHMED_SCORE DB ?
 
         DEST DB 7 DUP("$")
         DEST_SIZE DB ?
@@ -134,7 +145,7 @@ TITLE CODE
         _BX_DI_ DB '[bx][di]'
         _BP_SI_ DB '[bp][si]'
         _BP_DI_ DB '[bp][di]'
-
+        IS_1_POWER_UP DB '1'
 
     ;============PLAYER 1 ALI'S_REGISTERS===========
         ALI_AX   LABEL WORD
@@ -231,8 +242,61 @@ MAIN PROC FAR
     ;DISPLAY MESSS
     DISPLAY_MESSAGE MESS1,1,0,0
 
+    DISPLAY_MESSAGE USEPOWERUPS,1,1,0
     ;READ COMMAND
-    READ_MESSAGE COMMAND_BUFFER,1,1,0
+    READ_MESSAGE COMMAND_BUFFER,1,4,0
+    
+    COMPARE_STRINGS COMMAND_BUFFER_INSTRUCTION,IS_1_POWER_UP,1
+    JNE EXECUTE_COMMAND
+    SET_VIDEO_MODE 6
+    MOV AH,0bh
+    MOV BH,16
+    MOV BL,1
+    INT 10H
+    CLEAR_SCREEN
+    DISPLAY_MESSAGE SELECT_POWER_UP,1,0,0
+    MOV AH,7
+    INT 21H
+    MOV POWER_UPS_BUFFER,AL
+
+    CMP POWER_UPS_BUFFER,'1'
+    JE POWER_UP_1
+    CMP POWER_UPS_BUFFER,'2'
+    JE POWER_UP_2
+    CMP POWER_UPS_BUFFER,'3'
+    JE POWER_UP_3
+    CMP POWER_UPS_BUFFER,'4'
+    JE POWER_UP_4
+    JMP EXECUTE_COMMAND
+
+    POWER_UP_1:
+        CMP PLAYER_ROUNC,1
+        JNE EXE_AHMED
+            READ_MESSAGE COMMAND_BUFFER,1,4,0
+            CALL ALI_EXE
+            SUB ALI_SCORE,5
+            JMP EXIT_POWER_UPS
+        EXE_AHMED:
+            READ_MESSAGE COMMAND_BUFFER,1,4,0
+            CALL AHMED_EXE
+            SUB AHMED_SCORE,5
+            JMP EXIT_POWER_UPS
+    POWER_UP_2:
+        READ_MESSAGE COMMAND_BUFFER,1,4,0
+        CALL ALI_EXE
+        CALL AHMED_EXE
+    POWER_UP_3:
+
+    POWER_UP_4:
+
+    EXIT_POWER_UPS:
+
+
+
+    EXECUTE_COMMAND:
+
+
+
 
  
 

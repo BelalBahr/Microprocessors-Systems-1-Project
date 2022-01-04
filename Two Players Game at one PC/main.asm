@@ -3969,23 +3969,48 @@ ROR_OP  ENDP
 
 
 INC_OP PROC NEAR
-    
-    MOV DI,DEST_ADDRESS
-    MOV AX,0
-    INC AL
-    MOV [DI],AL
+
+    CMP DEST_BYTES,1
+    JE OPERATION_8BITS_INC
+
+        MOV DI,DEST_ADDRESS
+        MOV AX,[DI]
+        INC AX
+        MOV [DI],AX
+        JMP EXIT_INC_OP
+
+    OPERATION_8BITS_INC:
+
+        MOV DI,DEST_ADDRESS
+        MOV AL,[DI]    
+        INC AL
+        MOV [DI],AL
+
+    EXIT_INC_OP:
     RET
 
 INC_OP ENDP
 
 DEC_OP PROC NEAR
 
-    MOV DI,DEST_ADDRESS
-    MOV AX,0
-    DEC AL
-    MOV [DI],AL
-    RET
+    CMP DEST_BYTES,1
+    JE OPERATION_8BITS_DEC
 
+        MOV DI,DEST_ADDRESS
+        MOV AX,[DI]
+        INC AX
+        MOV [DI],AX
+        JMP EXIT_DEC_OP
+
+    OPERATION_8BITS_DEC:
+
+        MOV DI,DEST_ADDRESS
+        MOV AL,[DI]    
+        INC AL
+        MOV [DI],AL
+
+    EXIT_DEC_OP:
+    RET
 DEC_OP ENDP
 
 

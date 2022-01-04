@@ -7,7 +7,7 @@ TITLE CODE
 ;============================================================
 
 .MODEL COMPACT
-.STACK 4096
+.STACK 1024
 .386
 
 ;================================
@@ -1844,11 +1844,11 @@ org 900
  DB 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31 
  DB 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31 
  DB 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31
- extra ENDS
- 
- .data
+;extra ENDS
+extra ENDS
+.DATA
 HORIZONTAL_OFFSET DW 0
-VERTICAL_OFFSET   DW 0
+VERTICAL_OFFSET   DW -16
 IMG_HIGHT DW 200
 IMG_WIDTH DW 320
 
@@ -1887,41 +1887,41 @@ hits2 dw 0d
 miss2 dw 0d   
 
 game_over_str dw '  ',0ah,0dh
-db '                             |               |',0ah,0dh
-db '                             |---------------|',0ah,0dh
-db '                             |               |',0ah,0dh
-db '                             |_______________|',0ah,0dh
-dw ' ',0ah,0dh 
-dw ' ',0ah,0dh
-dw ' ',0ah,0dh
-dw ' ',0ah,0dh
-dw ' ',0ah,0dh
-dw ' ',0ah,0dh
-db '                                Game Over',0ah,0dh
-db '                        Press Enter to start again$',0ah,0dh 
+    db '                             |               |',0ah,0dh
+    db '                             |---------------|',0ah,0dh
+    db '                             |               |',0ah,0dh
+    db '                             |_______________|',0ah,0dh
+    dw ' ',0ah,0dh 
+    dw ' ',0ah,0dh
+    dw ' ',0ah,0dh
+    dw ' ',0ah,0dh
+    dw ' ',0ah,0dh
+    dw ' ',0ah,0dh
+    db '                                Game Over',0ah,0dh
+    db '                        Press Enter to start again$',0ah,0dh 
 
 
 game_start_str dw '  ',0ah,0dh
 
-dw ' ',0ah,0dh
-dw ' ',0ah,0dh
-dw ' ',0ah,0dh
-db '                ====================================================',0ah,0dh
-db '               ||                                                  ||',0ah,0dh                                        
-db '               ||            *     Shooting Game      *            ||',0ah,0dh
-db '               ||                                                  ||',0ah,0dh
-db '               ||--------------------------------------------------||',0ah,0dh
-db '               ||                                                  ||',0ah,0dh
-db '               ||                                                  ||',0ah,0dh
-db '               ||                                                  ||',0ah,0dh          
-db '               ||     Use up and down key to move player1          ||',0ah,0dh
-db '               ||          and space button to shoot               ||',0ah,0dh
-db '               ||                                                  ||',0ah,0dh
-db '               ||     Use w and s key to move player2              ||',0ah,0dh
-db '               ||          and   g  button to shoot                ||',0ah,0dh
-db '               ||                                                  ||',0ah,0dh
-db '                ====================================================',0ah,0dh
-db '$',0ah,0dh
+    dw ' ',0ah,0dh
+    dw ' ',0ah,0dh
+    dw ' ',0ah,0dh
+    db '                ====================================================',0ah,0dh
+    db '               ||                                                  ||',0ah,0dh                                        
+    db '               ||            *     Shooting Game      *            ||',0ah,0dh
+    db '               ||                                                  ||',0ah,0dh
+    db '               ||--------------------------------------------------||',0ah,0dh
+    db '               ||                                                  ||',0ah,0dh
+    db '               ||                                                  ||',0ah,0dh
+    db '               ||                                                  ||',0ah,0dh          
+    db '               ||     Use up and down key to move player1          ||',0ah,0dh
+    db '               ||          and space button to shoot               ||',0ah,0dh
+    db '               ||                                                  ||',0ah,0dh
+    db '               ||     Use w and s key to move player2              ||',0ah,0dh
+    db '               ||          and   g  button to shoot                ||',0ah,0dh
+    db '               ||                                                  ||',0ah,0dh
+    db '                ====================================================',0ah,0dh
+    db '$',0ah,0dh
 
 
     ;============Common data================
@@ -2161,6 +2161,8 @@ db '$',0ah,0dh
     forbidden2 db 'enter second forbidden character','$'
     player1forbidden db ? 
     player2forbidden db ?
+
+
 ;================================================================
 ;==============================CODE==============================
 ;================================================================
@@ -2171,11 +2173,11 @@ MAIN PROC FAR
     MOV DS,AX
     MOV ES,AX
     ASSUME               ES:extra
-	                              mov                  ax, extra
-	                              mov                  es, ax
+	mov                  ax, extra
+	mov                  es, ax
 
     p1_name:
-        mov ax,0012h
+        mov ax,0019
         int 10h
         
         mov ah,2
@@ -2216,7 +2218,7 @@ MAIN PROC FAR
         
     p2_name:
     
-        mov ax,0012h
+        mov ax,0019
         int 10h
         
         mov ah,2
@@ -2256,7 +2258,7 @@ MAIN PROC FAR
         jnz p2_name 
 
     F2action:
-        mov ax,0012h
+        mov ax,0019
         int 10h
         
         mov ah,2
@@ -2282,7 +2284,7 @@ MAIN PROC FAR
         jnz F2action 
         
     initialpoints:
-        mov ax,0012h
+        mov ax,0019
         int 10h
          
         mov ah,9
@@ -2299,7 +2301,7 @@ MAIN PROC FAR
         lea dx,player1initial
         int 21h                 ;take player 1 initial
         
-        mov ax,0012h
+        mov ax,0019
         int 10h
          
         mov ah,9
@@ -2331,7 +2333,7 @@ MAIN PROC FAR
         mov initial,bl
         
         forbidden: 
-        mov ax,0012h
+        mov ax,0019
         int 10h 
         
         mov ah,2
@@ -2350,7 +2352,7 @@ MAIN PROC FAR
         int 21h                 ;take player 1 forbidden
         mov player1forbidden, al
 
-        mov ax,0012h
+        mov ax,0019
         int 10h
         
         mov ah,2
@@ -2367,7 +2369,7 @@ MAIN PROC FAR
         int 21h                 ;take player 2 forbidden 
         mov player2forbidden,al
 
-        mov ax,0012h
+        mov ax,0019
         int 10h 
         
         mov ah,2
@@ -2386,7 +2388,7 @@ MAIN PROC FAR
 
     lvlselect:
     
-        mov ax,0012h
+        mov ax,0019
         int 10h
         
         mov ah,2
@@ -2431,6 +2433,8 @@ MAIN PROC FAR
     CLEAR_SCREEN
 
     SET_VIDEO_MODE 19
+
+    call DRAW_GAME
 
     ;DISPLAY MESSS
     DISPLAY_MESSAGE MESS1,1,0,0
@@ -4045,8 +4049,8 @@ AHMED_EXE PROC NEAR
 AHMED_EXE ENDP
 
 
-DRAW PROC FAR
-     MOV AH,00
+DRAW_GAME PROC NEAR
+    MOV AH,00
     MOV AL,19
     INT 10H
 
@@ -4055,7 +4059,7 @@ DRAW PROC FAR
 
 
 
-    LEA BX,img
+    LEA BX,img-865
 
     DRAWING_IMEG:
 
@@ -4078,12 +4082,17 @@ DRAW PROC FAR
 
     MOV  AH,4CH
     INT  21H
+    
+    mov ah,2
+    mov dx,692ah
+    int 10H
+    mov ah,9
+    mov dx, offset player1name
+    int 21h
 
-DRAW ENDP
+DRAW_GAME ENDP
 
-END MAIN
-
-SHOOTING PROC FAR
+SHOOTING PROC NEAR
                                                                         
     main_loop:                                 ;update logic and display everything
                                             ;check any key is pressed
@@ -4537,7 +4546,11 @@ SHOOTING PROC FAR
             int 21h
             cmp al,13d
             jne input
-            call clear_screen
+
+            mov ah,0
+             mov al,3
+            int 10h        
+            ret  ; clear screen
             jmp main_loop
         
 
@@ -4553,7 +4566,10 @@ SHOOTING PROC FAR
         MOV     AH, 86H         
         INT     15H        ;wait 1 sec
 
-        call clear_screen
+        mov ah,0
+        mov al,3
+        int 10h        
+        ret   ; clear_screen
         
 
         
@@ -4562,16 +4578,6 @@ SHOOTING PROC FAR
     exit_game:                                  ;end of our sweet game :)
     mov exit,10d
 
-    main endp
-
-
-
-
-    clear_screen proc near
-            mov ah,0
-            mov al,3
-            int 10h        
-            ret
-    clear_screen endp
-
 SHOOTING ENDP
+
+end main

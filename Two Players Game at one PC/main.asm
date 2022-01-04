@@ -3784,8 +3784,6 @@ SHR_OP  PROC NEAR
 
     EXIT_SHR_OP:
 
-
-
     RET
 SHR_OP  ENDP
 
@@ -3840,9 +3838,6 @@ SHL_OP  PROC NEAR
         JMP EXIT_SHL_OP
 
     EXIT_SHL_OP:
-
-
-
     RET
 SHL_OP  ENDP
 
@@ -3914,7 +3909,7 @@ CLC_OP  ENDP
 NOP_OP  PROC NEAR
 
     NOP
-
+    RET
 NOP_OP ENDP
 
 
@@ -3974,11 +3969,12 @@ ROR_OP  ENDP
 
 
 INC_OP PROC NEAR
-
+    
     MOV DI,DEST_ADDRESS
     MOV AX,0
     INC AL
     MOV [DI],AL
+    RET
 
 INC_OP ENDP
 
@@ -3988,6 +3984,7 @@ DEC_OP PROC NEAR
     MOV AX,0
     DEC AL
     MOV [DI],AL
+    RET
 
 DEC_OP ENDP
 
@@ -4020,8 +4017,6 @@ MOV_OP  PROC NEAR
 
     RET
 
-
-
 MOV_OP ENDP
 
 
@@ -4033,7 +4028,7 @@ ALI_EXE PROC NEAR
     CALL DECODE_SOURCE
     CALL GET_ADDRESSING_MODE_ALI
     CALL EXECUT_INSTRUCTION
-
+    RET
 ALI_EXE ENDP
 
 
@@ -4045,7 +4040,7 @@ AHMED_EXE PROC NEAR
     CALL DECODE_SOURCE
     CALL GET_ADDRESSING_MODE_AHMED
     CALL EXECUT_INSTRUCTION
-
+    RET
 AHMED_EXE ENDP
 
 
@@ -4089,7 +4084,7 @@ DRAW_GAME PROC NEAR
     mov ah,9
     mov dx, offset player1name
     int 21h
-
+    RET
 DRAW_GAME ENDP
 
 SHOOTING PROC NEAR
@@ -4577,7 +4572,7 @@ SHOOTING PROC NEAR
 
     exit_game:                                  ;end of our sweet game :)
     mov exit,10d
-
+    RET
 SHOOTING ENDP
 
 end main

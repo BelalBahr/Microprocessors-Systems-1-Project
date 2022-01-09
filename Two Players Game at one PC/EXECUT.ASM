@@ -251,7 +251,7 @@
 
         LEA DI,PLAYER_RAM
         MOV AX,0
-        MOV AL,DEST_CODE
+        MOV AL,SOURCE_CODE
         ADD DI,AX
         MOV AX,DI
         MOV SOURCE_ADDRESS,DI
@@ -263,7 +263,7 @@
 
         LEA DI,PLAYER_RAM
         MOV AX,0
-        MOV AL,DEST_CODE
+        MOV AL,SOURCE_CODE
         ADD DI,AX
 
         MOV AX,DI
@@ -275,7 +275,7 @@
 
         LEA DI,PLAYER_RAM
         MOV AX,0
-        MOV AL,DEST_CODE
+        MOV AL,SOURCE_CODE
         ADD DI,AX
 
         MOV BX,[DI]
@@ -308,8 +308,13 @@
 
     ;============================================================  
 
+    UDATE_REG MACRO DEST_ADD
 
+        MOV SI,DEST_ADD
+        MOV AX,[SI]
+        CALL UPDATE_REG_PROC
 
+    ENDM
 
 
 
@@ -381,6 +386,7 @@
     PRINT_REG DB 6 DUP('$')
     REG_BUFFER DW ? ; VAR. USED IN PRINTING
     PRINT_REG_BUFFER DB 6 DUP('$') ; VAR. FOR CRAZY DOSBOX
+    
     ;============COMMANDS================
 
         IS_ADD  DB "add ",'$' 
@@ -472,11 +478,11 @@
 
     ;============PLAYER 1 ALI'S_REGISTERS===========
         ALI_AX   LABEL WORD
-        ALI_AL   DB 00H
-        ALI_AH   DB 00H
+        ALI_AL   DB 78H
+        ALI_AH   DB 78H
         ALI_BX   LABEL WORD
-        ALI_BL   DB 00H
-        ALI_BH   DB 00H
+        ALI_BL   DB 48H
+        ALI_BH   DB 12H
         ALI_CX   LABEL WORD
         ALI_CL   DB 00H
         ALI_CH   DB 00H
@@ -559,14 +565,15 @@ MAIN PROC FAR
     MOV DS,AX
     MOV ES,AX
 
-    MOV AH,00
-    MOV AL,19
-    INT 10H    
+    SET_VIDEO_MODE 3  
 
     CALL INITIALIZATION
 
+    READ_MESSAGE COMMAND_BUFFER,1,2,0
+    CALL ALI_EXE
 
 
+    CALL INITIALIZATION
 
  
 
@@ -578,7 +585,7 @@ MAIN ENDP
 
 INITIALIZATION PROC NEAR
 
-        SET_VIDEO_MODE 13H
+
 
 
 
@@ -669,6 +676,9 @@ INITIALIZATION PROC NEAR
     DISPLAY_MESSAGE PRINT_REG_BUFFER,1,18,20
     RET
 INITIALIZATION ENDP
+
+
+
 
 HEX_ASCII_PROC PROC NEAR
 
@@ -2114,6 +2124,7 @@ ALI_EXE PROC NEAR
     CALL DECODE_SOURCE
     CALL GET_ADDRESSING_MODE_ALI
     CALL EXECUT_INSTRUCTION
+    RET
 
 ALI_EXE ENDP
 
@@ -2126,9 +2137,9 @@ AHMED_EXE PROC NEAR
     CALL DECODE_SOURCE
     CALL GET_ADDRESSING_MODE_AHMED
     CALL EXECUT_INSTRUCTION
+    RET
 
 AHMED_EXE ENDP
     END MAIN
-
 
 

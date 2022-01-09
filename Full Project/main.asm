@@ -18,7 +18,7 @@ TITLE CODE
 ;================================
 BackgroundData Segment
 	;-------------------Clear Area Data----------
-	ClearHorizontalOffset dw ?
+	ClearHorizontalOffset dw 500
 	ClearVerticalOffset   dw ?
 	ClearAreaWidth        dw ?
 	ClearAreaHeight       dw ?
@@ -1878,6 +1878,63 @@ VERTICAL_OFFSET   DW -16
 IMG_HIGHT DW 200
 IMG_WIDTH DW 320
 
+ax1_x                   equ 6
+ax1_y                   equ 7
+
+bx1_x                   equ 6
+bx1_y                   equ 9
+
+cx1_x                   equ 6
+cx1_y                   equ 12
+
+dx1_x                   equ 6
+dx1_y                   equ 15
+
+si1_x                   equ 12
+si1_y                   equ 7
+
+di1_x                   equ 12
+di1_y                   equ 9
+
+sp1_x                   equ 12
+sp1_y                   equ 11
+
+bp1_x                   equ 12
+bp1_y                   equ 13
+
+ax2_x                   equ 16
+ax2_y                   equ 7
+
+bx2_x                   equ 16
+bx2_y                   equ 11
+
+cx2_x                   equ 16
+cx2_y                   equ 13
+
+dx2_x                   equ 16
+dx2_y                   equ 15
+
+si2_x                   equ 16
+si2_y                   equ 7
+
+di2_x                   equ 16
+di2_y                   equ 9
+
+sp2_x                   equ 16
+sp2_y                   equ 11
+
+bp2_x                   equ 16
+bp2_y                   equ 13
+
+;============PRINT REG================
+
+    ASCII_TABLE DB '0','1','2','3','4','5','6','7','8','9'
+                DB 'A','B','C','D','E','F'
+    PRINT_REG DB 6 DUP('$')
+    REG_BUFFER DW ? ; VAR. USED IN PRINTING
+    PRINT_REG_BUFFER DB 6 DUP('$') ; VAR. FOR CRAZY DOSBOX
+
+
     exit db 0
 player1_pos dw 1760d                         ;position of player
 
@@ -1949,6 +2006,8 @@ miss2 dw 0d
 
     username1               db  16,?,17 dup('$')
 	username2               db  16,?,17 dup('$')
+    initialpoints1          db 3,?,4 dup('$')
+    initialpoints2          db 3,?,4 dup('$')
     WindowsWidth            EQU 320
 	WindowsHeight           EQU 200
     sendind_colors          equ 07fh
@@ -1982,10 +2041,11 @@ Char_Sent               db  ?
 
     initial_msg_warning     db  "*The username shouldn't exceed 15 characters and should start with a letter.$"
 	initial_msg_1           db  'please enter your username : $'
-	initial_msg_2           db  'please enter the username of the second player: $'
+	initial_msg_2           db  'please enter your initial points: $'
     dashedline              db  80 dup('-'),'$'
     current_video_mode      db  ?
-
+    	gotochat                db 0
+    	PointFinished           db  0
 game_over_str dw '  ',0ah,0dh
     db '                             |               |',0ah,0dh
     db '                             |---------------|',0ah,0dh
@@ -2297,10 +2357,14 @@ MAIN PROC FAR
 	mov                  es, ax
      CALL                  ConfigureCommunication
 	;Initial Screen
-	                                  CALL                  initial_screen
+	                                  CALL                  initial_screen1
 	;EXCHAGE USERNAMES
 	                                  CALL                  USERNAMES
 	;MAIN Menu Screen
+                                      ;CALL                  initial_screen2
+                                      
+                                      ;CALL                  GETINITIALPOINTS
+
 	                                  CALL                  MAINMENU
 	;wait for players to choose
 
@@ -2341,6 +2405,34 @@ USERNAMES PROC NEAR
 	                                  print_status_3_mesg   waiting,username1+2,responsetoplay
 	                                  RET
 USERNAMES ENDP
+
+GETINITIALPOINTS PROC NEAR
+                                      mov                   si,offset initialpoints1+1
+	                                  mov                   di,offset initialpoints2+1
+	                                  mov                   cx,5
+	InitialPointsLoop:                     
+	                                  mov                   al,[si]
+	                                  mov                   Char_Sent,al
+	                                  CALL                  Send_Char
+
+	                                  mov                   al,-1
+	                                  mov                   Char_Received,al
+	; forcereceive:
+	;                                   CALL                  Receive_Char
+	;                                   cmp                   Char_Received,-1
+	;                                   jz                    forcereceive
+	                                  call                  Force_Receive_Char
+	                                  mov                   al , Char_Received
+	                                  mov                   [di],al
+	                                  inc                   si
+	                                  inc                   di
+	                                  dec                   cx
+	                                  jnz                   InitialPointsLoop
+                                      FixUserName           initialpoints1
+	                                  FixUserName           initialpoints2
+	                                  print_status_3_mesg   waiting,initialpoints1+2,responsetoplay
+	                                  RET
+GETINITIALPOINTS ENDP
 
 	;__________________________________________________________________
 	;______________________________PROC BREAK__________________________
@@ -2422,86 +2514,7 @@ ConfigureCommunication PROC NEAR
 	                                  RET
 ConfigureCommunication ENDP
 
-    p1_name:
-        mov ax,0019
-        int 10h
-        
-        mov ah,2
-        mov cx,0
-        mov dh,0
-        mov dl,0
-        int 10h                 ;move cursor
-        
-        mov ah,9
-        lea dx,name1message
-        int 21h                 ;ask user to enter name
-        
-        mov ah,02
-        mov dh,10
-        mov dl,0
-        mov cx,0
-        int 10h                 ;move cursor
-        
-        mov ah,0ah
-        lea dx,player1name
-        int 21h                 ;take player 1 name
-        
-        mov ah,2
-        mov dh,20
-        mov dl,0
-        mov cx,0
-        int 10h                 ;move cursor
-        
-        mov ah,9
-        lea dx,enterkey
-        int 21h                 ;ask the user to press enter or re-enter their name
-        
-        mov ah,0
-        int 16h                 ;get key from user
-         
-        cmp ah,1ch              ;if user pressed enter continue
-        jnz p1_name
-        
-    p2_name:
-    
-        mov ax,0019
-        int 10h
-        
-        mov ah,2
-        mov cx,0
-        mov dh,0
-        mov dl,0
-        int 10h                 ;move cursor to 0,0
-        
-        mov ah,9
-        lea dx,name2message
-        int 21h                 ;ask user to enter name
-        
-        mov ah,02
-        mov dh,10
-        mov dl,0
-        mov cx,0
-        int 10h                 ;move cursor to row 15
-        
-        mov ah,0ah
-        lea dx,player2name
-        int 21h                 ;take player 1 name
-        
-        mov ah,2
-        mov dh,20
-        mov dl,0
-        mov cx,0
-        int 10h                 ;move cursor to row 20
-        
-        mov ah,9
-        lea dx,enterkey
-        int 21h                 ;ask the user to press enter or re-enter their name
-        
-        mov ah,0
-        int 16h                 ;get key from user
-         
-        cmp ah,1ch              ;if user pressed enter continue
-        jnz p2_name 
+
 
     mainMloop:
         mov ax,0012h
@@ -4322,7 +4335,7 @@ DRAW_GAME PROC NEAR
 
 
 
-    LEA BX,img-865
+    LEA BX,img-500
 
     DRAWING_IMEG:
 
@@ -4843,7 +4856,7 @@ SHOOTING PROC NEAR
     RET
 SHOOTING ENDP
 
-initial_screen proc NEAR
+initial_screen1 proc NEAR
 	; clear
 	                                  MOV                   AH, 06h                                                                  	; Scroll up function
 	                                  XOR                   AL, AL                                                                   	; Clear entire screen
@@ -4865,7 +4878,30 @@ initial_screen proc NEAR
 	intitial_return:                  
 
 	                                  ret
-initial_screen endp
+initial_screen1 endp
+
+initial_screen2 proc NEAR
+	; clear
+	                                  MOV                   AH, 06h                                                                  	; Scroll up function
+	                                  XOR                   AL, AL                                                                   	; Clear entire screen
+	                                  mov                   CX,  0                                                                   	; Upper left corner CH=row, CL=column
+	                                  MOV                   DX, 184FH                                                                	; lower right corner DH=row, DL=column
+	                                  MOV                   BH, 07fh
+	                                  INT                   10H
+
+
+	                                  print_mesg            0,23,1,dashedline
+	write_points1:                  
+	                                  print_mesg            5,10,1,initial_msg_2
+	                                  read_string           0,0,0,initialpoints1
+	                                  validate              initialpoints1+2
+	                                  pop                   ax
+	                                  cmp                   ax,0
+	                                  jz                    write_points1
+	initial2_return:                  
+
+	                                  ret
+initial_screen2 endp
 
 MAINMENU PROC NEAR
 	; clear
@@ -5441,8 +5477,78 @@ try_proc_Check_For_Key_Pressed proc near
 try_proc_Check_For_Key_Pressed endp
 
 Game proc near
+             
+             ;Call INITIALIZATION
+             mov                   ax, 0013h
+	         INT                   10h
+             cmp                   Controller_Player,1
+	                                  jz                    InitialConditions
 
-game endp
+
+	                                  mov                   bx,0
+	                                  ClearArea             WindowsHeight,WindowsWidth,bx,bx                                         	;drawing background
+	Player2_MainLoop:                 
+	;--check for chat
+	                                  ;CALL 
+                                      CALL                  Receive_Data_From_Player_1
+	                                  CALL                  Send_Data_to_Player_1
+	                                  ;cmp                   Exit,0
+	                                  ;jnz                   EndGame
+	                                  ;Delay                 Delay_A,Delay_B
+	                                  cmp                   gotochat,1
+	                                  jne                   Player2_MainLoop
+	                                  mov                   gotochat,0
+	                                  call                  chat_mode
+	                                  JMP                   Player2_MainLoop
+                                      
+
+	;------------------------------Player 1 is the controller
+	;Initial Conditions
+	InitialConditions:                CALL                  Initial_Conditions
+		
+	;Game Loop
+	MainLoop:                                                                                                                        	;Call        MovePlayer1
+
+	                                  CALL                  Send_Data_to_Player_2
+	                                  CALL                  Receive_Data_From_Player_2
+	                                  cmp                   gotochat,1
+	                                  jne                   chkforchat
+	                                  mov                   gotochat,0
+	                                  call                  chat_mode
+
+	chkforchat:                       
+	;----check for chat
+	                                  Check_For_Key_Pressed
+	                                  cmp                   ah,ESC_
+	                                  jne                   clrbfr
+	                                  mov                   gotochat,1
+	;----
+
+	clrbfr:                           ClearBuffer
+	                                  Delay                 Delay_A,Delay_B
+	                                  ;cmp                   Exit,0
+	                                  ;jnz                   EndGame
+	                                  cmp                   PointFinished,0
+	                                  jz                    MainLoop
+	                                  CALL                  Initial_Conditions
+	                                  mov                   PointFinished,0
+	                                  JMP                   InitialConditions
+
+	;Final Screen
+	EndGame:                          ;CALL                  final_screen
+                                      RET
+Game endp
+
+Initial_Conditions Proc NEAR
+
+	;Draw The Background
+	                                  mov                   bx,0
+	                                  ClearArea             WindowsHeight,WindowsWidth,bx,bx
+                                    ;Call Draw_Regs
+
+	                                  RET
+Initial_Conditions ENDP
+
 Clear Proc  Near
 	                                  Assume                ds:BackgroundData
 	;   pop       HorizontalOffset
@@ -5500,4 +5606,1953 @@ get_current_video_mode proc near
 	                                  mov                   current_video_mode,al
 	                                  ret
 get_current_video_mode endp
+
+; Draw_Regs proc near
+;                                     call draw_al_p1
+;                                     call draw_al_p2
+
+;                                     call draw_ah_p1
+;                                     call draw_ah_p2
+
+;                                     call draw_bl_p1
+;                                     call draw_bl_p2
+
+;                                     call draw_bh_p1
+;                                     call draw_bh_p2
+
+;                                     call draw_cl_p1
+;                                     call draw_cl_p2
+
+;                                     call draw_ch_p1
+;                                     call draw_ch_p2
+
+;                                     call draw_dl_p1
+;                                     call draw_dl_p2
+
+;                                     call draw_dh_p1
+;                                     call draw_dh_p2
+
+;                                     call draw_si_p1
+;                                     call draw_si_p2
+
+;                                     call draw_di_p1
+;                                     call draw_di_p2
+
+;                                     call draw_sp_p1
+;                                     call draw_sp_p2
+
+;                                     call draw_bp_p1
+;                                     call draw_bp_p2
+; Draw_Regs endp
+
+; draw_al_p1 proc near
+;     mov al, ALI_AL
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,ax1_x
+;     mov dh,ax1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_al1
+;     print1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,ax1_x
+;     mov dh,ax1_y
+;     inc dl
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_al1
+;     print2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_al1:
+; draw_al_p1 endp
+
+; draw_ah_p1 proc near
+;     mov al, ALI_AH
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,ax1_x
+;     sub dl,2
+;     mov dh,ax1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print_ah1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_ah1
+;     print_ah1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,ax1_x
+;     dec dl
+;     mov dh,ax1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print_ah2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_ah1
+;     print_ah2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_ah1:
+; draw_ah_p1 endp
+
+; draw_bl_p1 proc near
+;     mov al, ALI_BL
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,bx1_x
+;     mov dh,bx1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print_bl1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_bl1
+;     print_bl1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,bx1_x
+;     inc dl
+;     mov dh,bx1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print_bl2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_al1
+;     print_bl2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_bl1:
+; draw_bl_p1 endp
+
+; draw_bh_p1 proc near
+;     mov al, ALI_BH
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,bx1_x
+;     sub dl,2
+;     mov dh,bx1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print_bh1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_bh1
+;     print_bh1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,bx1_x
+;     sub dl,1
+;     mov dh,bx1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print_bh2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_bh1
+;     print_bh2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_bh1:
+; draw_bh_p1 endp
+
+; draw_cl_p1 proc near
+;     mov al, ALI_CL
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,cx1_x
+;     mov dh,cx1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print_cl1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_cl1
+;     print_cl1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,cx1_x
+;     inc dl
+;     mov dh,cx1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print_cl2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_cl1
+;     print_cl2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_cl1:
+; draw_cl_p1 endp
+
+; draw_ch_p1 proc near
+;     mov al, ALI_CH
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,cx1_x
+;     sub dl,2
+;     mov dh,cx1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print_ch1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_ch1
+;     print_ch1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,cx1_x
+;     sub bl,1
+;     mov dh,cx1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print_ch2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_ch1
+;     print_ch2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_ch1:
+; draw_ch_p1 endp
+
+; draw_dl_p1 proc near
+;     mov al, ALI_DL
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,dx1_x
+;     mov dh,dx2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print_dl1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_dl1
+;     print_dl1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,dx1_x
+;     inc dl
+;     mov dh,dx1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print_dl2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_dl1
+;     print_dl2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_dl1:
+; draw_dl_p1 endp
+
+; draw_dh_p1 proc near
+;     mov al, ALI_DH
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,dx1_x
+;     sub dl,2
+;     mov dh,dx1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print_dh1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_dh1
+;     print_dh1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,dx1_x
+;     sub dl,1
+;     mov dh,dx1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print_dh2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_dh1
+;     print_dh2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_dh1:
+; draw_dh_p1 endp
+
+; draw_al_p2 proc near
+;     mov al, AHMED_AL
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,ax2_x
+;     mov dh,ax2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end2_al1
+;     print1_2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,ax2_x
+;     mov dh,ax2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end2_al1
+;     print2_2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end2_al1:
+; draw_al_p2 endp
+
+; draw_ah_p2 proc near
+;     mov al, AHMED_AH
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,ax2_x
+;     sub dl,2
+;     mov dh,ax2_x
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print2_ah1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_ah2
+;     print2_ah1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,ax2_x
+;     sub dl,1
+;     mov dh,ax2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_ah2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_ah2
+;     print2_ah2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_ah2:
+; draw_ah_p2 endp
+
+; draw_bl_p2 proc near
+;     mov al, AHMED_BL
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,bx2_x
+;     mov dh,bx2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print2_bl1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_bl2
+;     print2_bl1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,bx2_x
+;     inc dl
+;     mov dh,bx2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_bl2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_bl2
+;     print2_bl2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_bl2:
+; draw_bl_p2 endp
+
+; draw_bh_p2 proc near
+;     mov al, AHMED_BH
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,bx2_x
+;     sub dl,2
+;     mov dh,bx1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print2_bh1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_bh1
+;     print2_bh1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,bx2_x
+;     sub dl,1
+;     mov dh,bx2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_bh2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_bh2
+;     print2_bh2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_bh2:
+; draw_bh_p2 endp
+
+; draw_cl_p2 proc near
+;     mov al, AHMED_CL
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,cx2_x
+;     mov dh,cx2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print2_cl1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_cl2
+;     print2_cl1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,cx2_x
+;     inc dl
+;     mov dh,cx2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_cl2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_cl2
+;     print2_cl2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_cl2:
+; draw_cl_p2 endp
+
+; draw_ch_p2 proc near
+;     mov al, AHMED_CH
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,cx2_x
+;     sub dl,2
+;     mov dh,cx2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print2_ch1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_ch2
+;     print2_ch1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,cx2_x
+;     dec dl
+;     mov dh,cx2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_ch2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_ch2
+;     print2_ch2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_ch2:
+; draw_ch_p2 endp
+
+; draw_dl_p2 proc near
+;     mov al, AHMED_DL
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,dx2_x
+;     mov dh,dx2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print2_dl1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_dl2
+;     print2_dl1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,dx2_x
+;     inc dl
+;     mov dh,dx2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_dl2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_dl2
+;     print2_dl2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_dl2:
+; draw_dl_p2 endp
+
+; draw_dh_p2 proc near
+;     mov al, AHMED_DH
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,dx2_x
+;     sub dl,2
+;     mov dh,dx2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print2_dh1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_dh2
+;     print2_dh1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,dx2_x
+;     sub dl,1
+;     mov dh,dx2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_dh2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_dh2
+;     print2_dh2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_dh2:
+; draw_dh_p2 endp
+
+; draw_si_p1 proc near
+;     mov ax,ALI_SI
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,si1_x
+;     mov dh,si1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_si1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_si1
+;     print1_si1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,si1_x
+;     inc dl
+;     mov dh,si1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print1_si4
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_si1
+;     print1_si4:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ax,ALI_SI
+;     mov al,ah
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,si1_x
+;     sub dl,2
+;     mov dh,si1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print12_si1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_si1
+;     print12_si1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,si1_x
+;     dec dl
+;     mov dh,si1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print12_si2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_si1
+;     print12_si2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+
+;     end_si1:
+; ret
+; draw_si_p1 endp
+
+; draw_si_p2 proc near
+;     mov ax,AHMED_SI
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,si2_x
+;     mov dh,si2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_si2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_si2
+;     print1_si2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,si2_x
+;     inc dl
+;     mov dh,si2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_si2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_si1
+;     print2_si2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ax,AHMED_SI
+;     mov al,ah
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,si2_x
+;     sub dl,2
+;     mov dh,si2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print3_si2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_si2
+;     print3_si2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,si2_x
+;     dec dl
+;     mov dh,si2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print4_si2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_si2
+;     print4_si2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+
+;     end_si2:
+; ret
+; draw_si_p2 endp
+
+; draw_di_p1 proc near
+;     mov ax,ALI_DI
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,di1_x
+;     mov dh,di2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_di1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_di1
+;     print1_di1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,di1_x
+;     inc dl
+;     mov dh,di1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_di1
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_di1
+;     print2_di1:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ax,ALI_DI
+;     mov al,ah
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,di1_x
+;     sub dl,2
+;     mov dh,di1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print3_di1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_di1
+;     print3_di1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,di1_x
+;     dec dl
+;     mov dh,di1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print4_di1
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_di1
+;     print4_di1:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+
+;     end_di1:
+; ret
+; draw_di_p1 endp
+
+; draw_di_p2 proc near
+;     mov ax,AHMED_DI
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,di2_x
+;     mov dh,di2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_di2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_di2
+;     print1_di2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,di2_x
+;     inc dl
+;     mov dh,di2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_di2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_di1
+;     print2_di2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ax,AHMED_DI
+;     mov al,ah
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,di2_x
+;     mov dh,di2_y
+;     sub dl,2
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print3_di2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_di2
+;     print3_di2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,di2_x
+;     dec dl
+;     mov dh,di2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print4_di2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_di2
+;     print4_di2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+
+;     end_di2:
+; ret
+; draw_di_p2 endp
+
+; draw_sp_p1 proc near
+;     mov ax,ALI_SP
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,sp1_x
+;     mov dh,sp1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_sp1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_sp1
+;     print1_sp1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,sp1_x
+;     inc dl
+;     mov dh,sp1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_sp1
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_sp1
+;     print2_sp1:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ax,ALI_SP
+;     mov al,ah
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,sp1_x
+;     mov dh,sp1_y
+;     sub dl,2
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print3_sp1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_sp1
+;     print3_sp1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,sp1_x
+;     dec dl
+;     mov dh,sp1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print4_sp1
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_sp1
+;     print4_sp1:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+
+;     end_sp1:
+; ret
+; draw_sp_p1 endp
+
+; draw_sp_p2 proc near
+;     mov ax,AHMED_SP
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,sp2_x
+;     mov dh,sp2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_sp2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_sp2
+;     print1_sp2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,sp2_x
+;     inc dl
+;     mov dh,sp2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_sp2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_sp1
+;     print2_sp2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ax,AHMED_SP
+;     mov al,ah
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,sp2_x
+;     mov dh,sp2_y
+;     sub dl,2
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print3_sp2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_sp2
+;     print3_sp2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,sp2_x
+;     dec dl
+;     mov dh,sp2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print4_sp2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_sp2
+;     print4_sp2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+
+;     end_sp2:
+; ret
+; draw_sp_p2 endp
+
+; draw_bp_p1 proc near
+;     mov ax,ALI_BP
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,bp1_x
+;     mov dh,bp1_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_bp1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_bp1
+;     print1_bp1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,bp1_x
+;     inc dl
+;     mov dh,bp1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_bp1
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_bp1
+;     print2_bp1:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ax,ALI_BP
+;     mov al,ah
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,bp1_x
+;     mov dh,bp1_y
+;     sub dl,2
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print3_bp1
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_bp1
+;     print3_bp1:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,bp1_x
+;     dec dl
+;     mov dh,bp1_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print4_bp1
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_bp1
+;     print4_bp1:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+
+;     end_bp1:
+; ret
+; draw_bp_p1 endp
+
+; draw_bp_p2 proc near
+;     mov ax,AHMED_BP
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,bp2_x
+;     mov dh,bp2_y
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print1_bp2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_bp2
+;     print1_bp2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,bp2_x
+;     inc dl
+;     mov dh,bp2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print2_bp2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_bp1
+;     print2_bp2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ax,AHMED_BP
+;     mov al,ah
+;     mov ah,00
+;     mov bl,16
+;     div bl             ; al = ax/16    ah = ax % 10 
+;     mov cl, al
+;     mov ch, ah
+
+;     mov ah,02
+;     mov dl,bp2_x
+;     mov dh,bp2_y
+;     sub dl,2
+;     int 10h            ;mov cusror
+    
+;     cmp cl,9
+;     JNG print3_bp2
+;     add cl,87
+    
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+;     jmp end_bp2
+;     print3_bp2:
+;     add cl,48
+
+;     mov ah,2
+;     mov dl,cl
+;     int 21h
+; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;     mov ah,02
+;     mov dl,bp2_x
+;     dec dl
+;     mov dh,bp2_y
+;     int 10h
+    
+;     cmp ch,9
+;     JNG print4_bp2
+;     add ch,87
+    
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     jmp end_bp2
+;     print4_bp2:
+;     add ch,48
+
+;     mov ah,2
+;     mov dl,ch
+;     int 21h
+
+;     end_bp2:
+; ret
+; draw_bp_p2 endp
+
+
+INITIALIZATION PROC NEAR
+
+        SET_VIDEO_MODE 13H
+
+
+
+
+    DISPLAY_MESSAGE MESS1,1,0,0
+    ;DISPLAY_MESSAGE MESS1,1,4,25
+    
+    HEX_ASCII ALI_AL
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,4,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_BX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,6,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_CX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,8,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_DX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,10,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_SI
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,12,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_DI
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,14,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_SP
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,16,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_BP
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,18,4
+
+
+
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_AX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,4,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_BX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,6,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_CX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,8,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_DX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,10,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_SI
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,12,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_DI
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,14,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_SP
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,16,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_BP
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,18,20
+    RET
+INITIALIZATION ENDP
+
+HEX_ASCII_PROC PROC NEAR
+
+    MOV CX,4
+    LOOP_HEX_ASCII:
+        MOV AX,REG_BUFFER
+        MOV BX,16
+
+        DIV BX
+
+        MOV REG_BUFFER,AX
+
+        MOV AL,DL
+        LEA BX,ASCII_TABLE
+        XLAT
+
+        MOV [DI],AL
+        DEC DI
+        DEC CX
+    JNZ LOOP_HEX_ASCII
+    MOV REG_BUFFER,0
+    RET
+
+HEX_ASCII_PROC ENDP
+Send_Data_to_Player_1 PROC NEAR
+	                                  Check_For_Key_Pressed
+	                                  cmp                   ah,ESC_
+	                                  jne                   rtnn
+	                                  mov                   Char_Sent,ah
+	                                  Call                  Send_Char
+	                                  CALL                  chat_mode
+	                                  RET
+	SendChar:                         
+	                                  mov                   Char_Sent,ah
+	                                  Call                  Send_Char
+	rtnn:                             
+	                                  RET
+Send_Data_to_Player_1 ENDP
+
+	;__________________________________________________________________
+	;______________________________PROC BREAK__________________________
+	;__________________________________________________________________
+
+Receive_Data_From_Player_2 PROC NEAR
+	                                  CALL                  Receive_Char
+	;---------------------------------------check for chat
+	                                  cmp                   Char_Received,ESC_
+	                                  jne                   Receive_Data_From_Player_2_Return
+	                                  CALL                  chat_mode
+	                                  RET
+	Receive_Data_From_Player_2_Return:
+	                                  mov                   ah,Char_Received
+	                                  ;mov                   Move_Player_2_Temp,ah
+	                                  RET
+Receive_Data_From_Player_2 ENDP
+
+
+Receive_Data_From_Player_1 PROC NEAR
+	;print_mesg            10,10,1,abbasre
+			
+	LLPP2:                            
+	                                  call                  Receive_Char
+	                                  cmp                   Char_Received,-22
+	                                  jne                   LLPP2
+
+	;   mov                   bh,-22
+	;   mov                   Char_Sent,bh
+	;   call                  Send_Char
+                                      
+	                                  CALL                  Force_Receive_Char
+	                                  mov                   bl,Char_Received
+	                                  mov                   exit,bl
+                                      
+                                      CALL                  Force_Receive_Char
+	                                  mov                   bl,Char_Received
+
+	                                  CALL                  Force_Receive_Char
+	                                  mov                   bl,Char_Received
+	                                  mov                   gotochat,bl
+
+
+
+
+	                                  RET
+Receive_Data_From_Player_1 ENDP
+
+	;__________________________________________________________________
+	;______________________________PROC BREAK__________________________
+	;__________________________________________________________________
+
+Send_Data_to_Player_2 PROC NEAR
+	;print_mesg 10,10,1,abbassend
+	                                  mov                   bh,-22
+	                                  mov                   Char_Sent,bh
+	                                  call                  Send_Char
+	; LLPP:
+	;                                   call                  Receive_Char
+	;                                   cmp                   Char_Received,-22
+	;                                   jne                   LLPP
+
+
+	                                  mov                   bl,exit
+	                                  mov                   Char_Sent,bl
+	                                  CALL                  Send_Char
+
+
+	                                  mov                   bl,gotochat
+	                                  mov                   Char_Sent,bl
+	                                  CALL                  Send_Char
+
+		
+	                                  RET
+Send_Data_to_Player_2 ENDP
+
 end main

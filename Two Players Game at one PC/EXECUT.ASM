@@ -1,13 +1,325 @@
 ;INCLUDE MACROS1.INC
-INCLUDE MACORS.INC
+;INCLUDE MACROS.INC
+
+;============================================================
+; ========================COMMAN MACORS======================
+;============================================================
+;THIS MACRO SETS THE CURSOR LOCATION TO ROW,COLUMN
+    SET_CURSOR MACRO ROW,COLUMN
+        MOV AH,02
+        MOV BH,00
+        MOV DH,ROW
+        MOV DL,COLUMN 
+        INT 10H
+        
+    ENDM
+    ;============================================================
+
+    GET_CURSOR  MACRO PAGE 
+        MOV BH,PAGE
+        MOV AH,3
+        INT 10H
+        MOV CURSOR_COL,DL
+        MOV CURSOR_ROW,DH
+
+    ENDM 
+    ;============================================================
 
 
-TITLE CODE
+    ;THIS MACRO CLEARS THE SCREEN
+    CLEAR_SCREEN MACRO 
+        MOV AX,0600H
+        MOV BH,07
+        MOV CX,0
+        MOV DX,184FH
+        INT 10H
+        
+    ENDM
+    ;============================================================
+
+    ;THIS MACRO PRINT MESSAGE ON SPECIFIC LOCATION
+    ;IF LOCATION = 0 DON'T MOVE CURSOR IF EQUAL 1 MOV IT TO ROW AND COLUMN
+    DISPLAY_MESSAGE MACRO MESS,LOCATION,ROW,COLUMN 
+        LOCAL SAMELOCATION
+        MOV AX,LOCATION
+        CMP AX,0
+        JE SAMELOCATION
+        SET_CURSOR ROW,COLUMN
+
+        SAMELOCATION:
+            MOV AH,9
+            MOV DX,OFFSET MESS
+            INT 21H    
+    ENDM
+    ;============================================================
+
+    READ_MESSAGE MACRO BUFFER,LOCATION,ROW,COLUMN 
+        LOCAL SAMELOCATION
+        MOV AX,LOCATION
+        CMP AX,0
+        JE SAMELOCATION
+        SET_CURSOR ROW,COLUMN
+
+        SAMELOCATION:
+            MOV AH,0AH
+            MOV DX,OFFSET BUFFER
+            INT 21H 
+
+    ENDM
+    ;============================================================
+
+    COMPARE_STRINGS MACRO STR1,STR2,NUM_OF_BYTES
+        LEA DI,STR1
+        LEA SI,STR2
+        MOV CX,NUM_OF_BYTES
+        REP CMPSB    
+    ENDM
+    ;============================================================
+
+    SEARCH_ON_STRING MACRO STR_TO_SHEARC,CHAR_NEED_TO_SEARCH,RANG_TO_SEARCH
+    ; ZF = 1 IF CHAR IS FOUND
+        LEA DI,STR_TO_SHEARC
+        MOV AL,CHAR_NEED_TO_SEARCH
+        MOV CX,RANG_TO_SEARCH
+        REPNE SCASB
+
+    ENDM
+    ;============================================================
+
+    MOVE_STRING MACRO STR_DEST,STR_SOURCE,RANG_TO_MOVE
+    ; ZF = 1 IF CHAR IS FOUND
+        LEA DI,STR_DEST
+        LEA SI,STR_SOURCE
+        MOV CX,RANG_TO_MOVE
+        REP MOVSB
+
+    ENDM
+    ;============================================================
+    STOR_WORD MACRO STR_TO_STOR_IN,STR_TO_STOR_FROM,RANG_TO_SEARCH
+    ; ZF = 1 IF CHAR IS FOUND
+        LEA DI,STR_TO_STOR_IN
+        LEA SI,STR_TO_STOR_FROM
+        STOSW
+    ENDM
+    ;============================================================
+
+    SET_VIDEO_MODE MACRO MODE
+    ; TEXT 80X25 ==> AL = 3
+    ; GRAPHICS 320X200 ==> AL = 4
+    ; GRAPHICS 640X200 ==> AL = 6
+
+        MOV AH,00
+        MOV AL,MODE
+        INT 10H
+        
+    ENDM
+    ;============================================================
+
+    DRAW_CHAR MACRO character_to_display,page_number,attribute,number_of_times 
+    
+        MOV AL,character_to_display
+        MOV BH,page_number
+        MOV BL,attribute
+        MOV CX,number_of_times
+        MOV AH,9
+        INT 10H
+
+    ENDM
+    ;============================================================
+
+    DRAW_PIXEL MACRO COLOR,ROW,COL
+        MOV AL,COLOR
+        MOV CX,COL
+        MOV DX,ROW
+        MOV AH,0CH
+        INT 10H  
+        
+    ENDM
+
+    ;============================================================
+    ;============================================================    
+
+    ASCII_HEX MACRO ASCII_VALUE,SIZE_VALUE,GOTO
+
+        MOV SI,OFFSET ASCII_VALUE
+        MOV AX,0
+        MOV DX,0
+        MOV CX,0
+        MOV CL,12
+        MOV Bl,SIZE_VALUE
+
+        AGAIN:
+            MOV AX,0
+            MOV AL,[SI]
+            CMP AL,'a'
+            JNS SUB_57
+            SUB AL,30H
+            JMP NEXT_V
+
+        SUB_57:
+            CMP AL,'f'
+            JS GO_OUT
+            SUB AL,57H
+            JMP NEXT_V
+
+        NEXT_V:
+            SHL AX,CL
+            OR DX,AX
+            SUB CL,4
+            OR DL,AL
+            INC SI
+            DEC Bl
+            JNZ AGAIN
+
+        MOV [GOTO],DX 
+        GO_OUT:
+
+    ENDM
+
+    ;============================================================
+    ;============================================================  
+
+
+    HEX_ASCII MACRO _2BYTE_REG
+
+        LEA DI,PRINT_REG
+        ADD DI,3
+        
+        LEA SI,_2BYTE_REG
+        MOV AX,[SI]
+        MOV REG_BUFFER,AX
+        MOV CX,4
+        CALL HEX_ASCII_PROC
+
+    ENDM
+
+
+    DRAW_IMG    MACRO   IMG_DATA, _IMG_HIGHT, _IMG_WIDTH, IMG_VERTICAL_OFFSET,IMG_HORIZONTAL_OFFSET
+
+        MOV BX,IMG_VERTICAL_OFFSET
+        MOV VERTICAL_OFFSET,BX
+
+        MOV BX,IMG_HORIZONTAL_OFFSET
+        MOV HORIZONTAL_OFFSET,BX
+
+        MOV BX,_IMG_WIDTH
+        MOV IMG_WIDTH,BX
+
+        MOV BX,_IMG_HIGHT
+        MOV IMG_HIGHT,BX
+
+        LEA BX,IMG_DATA
+
+        CALL DRAW
+
+    ENDM
+
+;============================================================
+;=========================COMMAND MACORS=====================
+;============================================================
+
+
+    GET_DEST_ADDRESS_0 MACRO PLAYER_RAM
+
+        LEA DI,PLAYER_RAM
+        MOV AX,0
+        MOV AL,DEST_CODE
+        ADD DI,AX
+
+        MOV AX,DI
+        MOV DEST_ADDRESS,DI
+
+
+    ENDM
+
+    GET_DEST_ADDRESS_1 MACRO PLAYER_RAM
+            
+        LEA DI,PLAYER_RAM
+        MOV AX,0
+        MOV AL,DEST_CODE
+        ADD DI,AX
+
+        MOV BX,[DI]
+        MOV DI,PLAYER_RAM
+        ADD DI,16
+        ADD DI,BX
+        MOV DEST_ADDRESS,DI
+
+    ENDM 
+
+    GET_SOURCE_ADDRESS_0 MACRO PLAYER_RAM
+
+        LEA DI,PLAYER_RAM
+        MOV AX,0
+        MOV AL,DEST_CODE
+        ADD DI,AX
+        MOV AX,DI
+        MOV SOURCE_ADDRESS,DI
+
+    ENDM 
+
+
+    GET_SOURCE_ADDRESS_1 MACRO PLAYER_RAM
+
+        LEA DI,PLAYER_RAM
+        MOV AX,0
+        MOV AL,DEST_CODE
+        ADD DI,AX
+
+        MOV AX,DI
+        MOV SOURCE_ADDRESS,DI
+
+    ENDM 
+
+    GET_SOURCE_ADDRESS_2 MACRO PLAYER_RAM
+
+        LEA DI,PLAYER_RAM
+        MOV AX,0
+        MOV AL,DEST_CODE
+        ADD DI,AX
+
+        MOV BX,[DI]
+        MOV DI,PLAYER_RAM
+        ADD DI,16
+        ADD DI,BX
+        MOV SOURCE_ADDRESS,DI
+
+    ENDM 
+
+    GET_SOURCE_ADDRESS_3 MACRO 
+
+        MOV SI,SOURCE_HEX_VALUE
+
+
+    ENDM 
+
+    GET_CARRY_ADDRESS MACRO PLAYER_RAM
+
+        LEA DI,PLAYER_RAM
+        ADD DI,32
+        MOV CARRY_ADDRESS,DI
+
+    ENDM
+
+
+
+
+
+
+    ;============================================================  
+
+
+
+
+
+
+
+
+
 ;============================================================
 ; ========================MAIN CODE==========================
 ;============================================================
-
-.MODEL HUGE
+.MODEL COMPACT
 .STACK 4096
 .386
 
@@ -61,6 +373,14 @@ TITLE CODE
         SOURCE_ADDRESS DW ?
         CARRY_ADDRESS  DW ?
 
+
+    ;============PRINT REG================
+
+    ASCII_TABLE DB '0','1','2','3','4','5','6','7','8','9'
+                DB 'A','B','C','D','E','F'
+    PRINT_REG DB 6 DUP('$')
+    REG_BUFFER DW ? ; VAR. USED IN PRINTING
+    PRINT_REG_BUFFER DB 6 DUP('$') ; VAR. FOR CRAZY DOSBOX
     ;============COMMANDS================
 
         IS_ADD  DB "add ",'$' 
@@ -226,6 +546,8 @@ TITLE CODE
         AHMED_PYTE_F DB 00H
         AHMED_CF     DB 00H
 
+    
+
 
 ;================================================================
 ;==============================CODE==============================
@@ -237,89 +559,11 @@ MAIN PROC FAR
     MOV DS,AX
     MOV ES,AX
 
-    ;CLEAR SCREEN
-    CLEAR_SCREEN
+    MOV AH,00
+    MOV AL,19
+    INT 10H    
 
-    SET_VIDEO_MODE 19
-
-    ;DISPLAY MESSS
-    DISPLAY_MESSAGE MESS1,1,0,0
-
-    DISPLAY_MESSAGE USEPOWERUPS,1,1,0
-    ;READ COMMAND
-    READ_MESSAGE COMMAND_BUFFER,1,4,0
-    
-    COMPARE_STRINGS COMMAND_BUFFER_INSTRUCTION,IS_1_POWER_UP,1
-    JNE EXECUTE_COMMAND
-    SET_VIDEO_MODE 6
-    MOV AH,0bh
-    MOV BH,16
-    MOV BL,1
-    INT 10H
-    CLEAR_SCREEN
-    DISPLAY_MESSAGE SELECT_POWER_UP,1,0,0
-    MOV AH,7
-    INT 21H
-    MOV POWER_UPS_BUFFER,AL
-
-    CMP POWER_UPS_BUFFER,'1'
-    JE POWER_UP_1
-    CMP POWER_UPS_BUFFER,'2'
-    JE POWER_UP_2
-    CMP POWER_UPS_BUFFER,'3'
-    JE POWER_UP_3
-    CMP POWER_UPS_BUFFER,'4'
-    JE POWER_UP_4
-    JMP EXECUTE_COMMAND
-
-    POWER_UP_1:
-        CMP PLAYER_ROUND,1
-        JNE EXE_AHMED
-            READ_MESSAGE COMMAND_BUFFER,1,4,0
-            CALL ALI_EXE
-            SUB ALI_SCORE,5
-            JMP EXIT_POWER_UPS
-        EXE_AHMED:
-            READ_MESSAGE COMMAND_BUFFER,1,4,0
-            CALL AHMED_EXE
-            SUB AHMED_SCORE,5
-            JMP EXIT_POWER_UPS
-    POWER_UP_2:
-        READ_MESSAGE COMMAND_BUFFER,1,4,0
-        CALL ALI_EXE
-        CALL AHMED_EXE
-    POWER_UP_3:
-        CMP PLAYER_ROUND,1
-        JNE CHANG_ALI_FORBIDDEN
-
-
-        CHANG_ALI_FORBIDDEN:
-
-    POWER_UP_4:
-        MOV ALI_AL,0
-        MOV ALI_AH,0
-        MOV ALI_BL,0
-        MOV ALI_BH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-        MOV ALI_AH,0
-
-    EXIT_POWER_UPS:
-
-
-
-    EXECUTE_COMMAND:
+    CALL INITIALIZATION
 
 
 
@@ -332,6 +576,123 @@ MAIN PROC FAR
 
 MAIN ENDP
 
+INITIALIZATION PROC NEAR
+
+        SET_VIDEO_MODE 13H
+
+
+
+
+    DISPLAY_MESSAGE MESS1,1,0,0
+    ;DISPLAY_MESSAGE MESS1,1,4,25
+    
+    HEX_ASCII ALI_AL
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,4,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_BX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,6,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_CX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,8,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_DX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,10,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_SI
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,12,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_DI
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,14,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_SP
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,16,4
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII ALI_BP
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,18,4
+
+
+
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_AX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,4,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_BX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,6,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_CX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,8,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_DX
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,10,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_SI
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,12,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_DI
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,14,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_SP
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,16,20
+
+    DISPLAY_MESSAGE MESS1,1,0,0 
+    HEX_ASCII AHMED_BP
+    MOVE_STRING PRINT_REG_BUFFER, PRINT_REG,6
+    DISPLAY_MESSAGE PRINT_REG_BUFFER,1,18,20
+    RET
+INITIALIZATION ENDP
+
+HEX_ASCII_PROC PROC NEAR
+
+    MOV CX,4
+    LOOP_HEX_ASCII:
+        MOV AX,REG_BUFFER
+        MOV BX,16
+
+        DIV BX
+
+        MOV REG_BUFFER,AX
+
+        MOV AL,DL
+        LEA BX,ASCII_TABLE
+        XLAT
+
+        MOV [DI],AL
+        DEC DI
+        DEC CX
+    JNZ LOOP_HEX_ASCII
+    MOV REG_BUFFER,0
+    RET
+
+HEX_ASCII_PROC ENDP
 
 EXECUT_INSTRUCTION PROC NEAR
 
@@ -1695,47 +2056,20 @@ ROR_OP  ENDP
 
 INC_OP PROC NEAR
 
-    CMP DEST_BYTES,1
-    JE OPERATION_8BITS_INC
-
-        MOV DI,DEST_ADDRESS
-        MOV AX,[DI]
-        INC AX
-        MOV [DI],AX
-        JMP EXIT_INC_OP
-
-    OPERATION_8BITS_INC:
-
-        MOV DI,DEST_ADDRESS
-        MOV AL,[DI]    
-        INC AL
-        MOV [DI],AL
-
-    EXIT_INC_OP:
-    RET
+    MOV DI,DEST_ADDRESS
+    MOV AX,0
+    INC AL
+    MOV [DI],AL
 
 INC_OP ENDP
 
 DEC_OP PROC NEAR
 
-    CMP DEST_BYTES,1
-    JE OPERATION_8BITS_DEC
+    MOV DI,DEST_ADDRESS
+    MOV AX,0
+    DEC AL
+    MOV [DI],AL
 
-        MOV DI,DEST_ADDRESS
-        MOV AX,[DI]
-        INC AX
-        MOV [DI],AX
-        JMP EXIT_DEC_OP
-
-    OPERATION_8BITS_DEC:
-
-        MOV DI,DEST_ADDRESS
-        MOV AL,[DI]    
-        INC AL
-        MOV [DI],AL
-
-    EXIT_DEC_OP:
-    RET
 DEC_OP ENDP
 
 
@@ -1780,7 +2114,7 @@ ALI_EXE PROC NEAR
     CALL DECODE_SOURCE
     CALL GET_ADDRESSING_MODE_ALI
     CALL EXECUT_INSTRUCTION
-    RET
+
 ALI_EXE ENDP
 
 
@@ -1792,7 +2126,7 @@ AHMED_EXE PROC NEAR
     CALL DECODE_SOURCE
     CALL GET_ADDRESSING_MODE_AHMED
     CALL EXECUT_INSTRUCTION
-    RET
+
 AHMED_EXE ENDP
     END MAIN
 
